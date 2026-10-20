@@ -57,7 +57,7 @@
     <p><b>Initial experience:</b> 2D map reconstruction and offline GPS tracking</p>
     <p><b>Later extension:</b> Optional 3D terrain visualisation</p>
     <p><b>Status:</b> Planning — key decisions recorded (see section 18A). Technology stack is provisional until validated by the Phase 0 prototype.</p>
-    <p><b>Version:</b> 2.0 — 20 October 2026 (v1.0 plus decision record)</p>
+    <p><b>Version:</b> 2.1 — 20 October 2026 (v2.0 decision record; calibration rule revised from Phase 0 evidence, datum note added)</p>
   </div>
   <p class="note" style="margin-top:110pt">Prepared as a working product brief. It distinguishes the agreed vision from assumptions, technical constraints and decisions. Version 2 resolves the open questions of version 1; each decision lists the conditions under which it should be revisited.</p>
 </section>
@@ -243,7 +243,7 @@
     <li>Let the user recalibrate if the initial alignment is visibly wrong.</li>
     <li>Keep image-space navigation available as a limited fallback when true geographic alignment cannot be established.</li>
   </ul>
-  <div class="decided"><b class="tag">Decided (18A.4):</b> calibration status is Good / Approximate / Insufficient with measurable thresholds (Good = 4+ well-spread points and leave-one-out RMSE ≤ 25 m). See section 7.3 and 18A.4.</div>
+  <div class="decided"><b class="tag">Decided (18A.4):</b> calibration status is Good / Approximate / Insufficient with measurable thresholds (Good = 5+ points and a 95% upper error bound ≤ 25 m; revised in v2.1 from Phase 0 evidence). See section 7.3 and 18A.4.</div>
   <h2>5.4 Navigation and tracking</h2>
   <ul>
     <li>Show the live GPS position and heading where device sensors support it.</li>
@@ -358,12 +358,13 @@
   <table>
     <thead><tr><th style="width:20%">Status</th><th>Criteria</th><th>App behaviour</th></tr></thead>
     <tbody>
-      <tr><td class="k">Good</td><td>≥ 4 control points, convex hull covering ≥ 50% of the map, leave-one-out RMSE ≤ 25 m.</td><td>Normal GPS dot with combined uncertainty circle.</td></tr>
-      <tr><td class="k">Approximate</td><td>Exactly 3 points (error not measurable), or 2 points (similarity fit), or scale + north + anchor, or RMSE 25–100 m.</td><td>Dot shown with an “Approximate” badge and enlarged uncertainty circle.</td></tr>
-      <tr><td class="k">Insufficient</td><td>Fewer than 2 points, or RMSE &gt; 100 m.</td><td>No geographic dot; track kept, user prompted to add an “I’m here” point.</td></tr>
+      <tr><td class="k">Good</td><td>≥ 5 control points, hull covering ≥ 15% of the map, 95% upper bound of map-wide error ≤ 25 m.</td><td>Normal GPS dot with combined uncertainty circle.</td></tr>
+      <tr><td class="k">Approximate</td><td>2–4 points (2 = similarity fit; 2–3 = error not measurable), or scale + north + anchor, or error bound 25–100 m.</td><td>Dot shown with an “Approximate” badge and enlarged uncertainty circle.</td></tr>
+      <tr><td class="k">Insufficient</td><td>Fewer than 2 points, collinear points, or error bound &gt; 100 m.</td><td>No geographic dot; track kept, user prompted to add an “I’m here” point.</td></tr>
     </tbody>
   </table>
-  <p>Displayed uncertainty radius = <span class="formula">√(GPS accuracy² + calibration RMSE²)</span>. Transform model: 2 points → similarity (scale, rotation, translation); 3+ points → least-squares affine. Higher-order or piecewise models are Phase 2.</p>
+  <p>Displayed uncertainty radius = <span class="formula">√(GPS accuracy² + calibration error²)</span>. Transform model: 2 points → similarity (scale, rotation, translation); 3+ points → least-squares affine. Higher-order or piecewise models are Phase 2. The error estimate accounts for leverage, so clustered points automatically report large errors far from the cluster. Thresholds were revised in v2.1 from Phase 0 simulation evidence (see 18A.4).</p>
+  <div class="decided"><b class="tag">Decided (v2.1, 18A.5):</b> coordinate entry asks for the map’s datum or warns of a possible ~100 m offset; old local datums (e.g. US NAD27, Survey of India Kalianpur) differ from GPS by 86–130 m.</div>
   <h2>7.4 GPS limitations</h2>
   <ul>
     <li>GPS may work without mobile data, but accuracy varies with terrain, tree cover, weather and device hardware.</li>
@@ -418,7 +419,7 @@
       <tr><td class="k">MapLayer</td><td>Layer order, visibility, rendering mode, style metadata, source asset references.</td></tr>
       <tr><td class="k">MapFeature</td><td>Feature ID, type candidate, geometry, label, confidence, review state, source region, style reference.</td></tr>
       <tr><td class="k">Calibration</td><td>Method, reference points, transform, scale/orientation inputs, coordinate reference assumptions, estimated residuals and confidence.</td></tr>
-      <tr><td class="k">ControlPoint <span class="new">NEW</span></td><td>Map pixel position, WGS84 position, source (grid entry / known landmark / “I’m here” GPS fix), GPS accuracy at capture, timestamp, leave-one-out residual.</td></tr>
+      <tr><td class="k">ControlPoint <span class="new">NEW</span></td><td>Map pixel position, WGS84 position, source (grid entry / known landmark / “I’m here” GPS fix), GPS accuracy at capture, timestamp, fit residual, map datum (for entered coordinates).</td></tr>
       <tr><td class="k">TrekSession</td><td>Start/end times, associated map, state, tracking configuration and user notes.</td></tr>
       <tr><td class="k">TrackPoint</td><td>Latitude/longitude, timestamp, reported accuracy, optional altitude/heading/speed, validity flags.</td></tr>
       <tr><td class="k">UserCorrection</td><td>Feature edit, prior value, new value, timestamp and source map version.</td></tr>
@@ -745,7 +746,7 @@
       <tr><td class="k">Which technology stack?</td><td>Determines rendering consistency, background reliability and team effort.</td><td>Flutter + shared C++/OpenCV core + native location adapters; provisional until Phase 0. (18A.1)</td></tr>
       <tr><td class="k">Which map formats are in the first release?</td><td>Camera photos are different from scans, screenshots and PDF pages.</td><td>JPEG, PNG, HEIC, WebP, single PDF page; size limits defined. (18A.2)</td></tr>
       <tr><td class="k">How much automatic reconstruction is required for MVP?</td><td>Perfect arbitrary-map support is not a realistic initial acceptance criterion.</td><td>Hybrid: source raster base + OCR labels + trail/water vectors; measured bar on a 60-map corpus. (18A.3)</td></tr>
-      <tr><td class="k">What counts as sufficient calibration?</td><td>Determines when the app can confidently show a GPS dot on the map.</td><td>Good ≥ 4 spread points and RMSE ≤ 25 m; Approximate; Insufficient. (18A.4)</td></tr>
+      <tr><td class="k">What counts as sufficient calibration?</td><td>Determines when the app can confidently show a GPS dot on the map.</td><td>Good ≥ 5 points and 95% error bound ≤ 25 m; Approximate; Insufficient. Revised v2.1. (18A.4)</td></tr>
       <tr><td class="k">Should the app support maps with no scale or coordinates?</td><td>Such maps may only support approximate image-space positioning.</td><td>Yes, via Sketch mode with progressive “I’m here” control points. (18A.5)</td></tr>
       <tr><td class="k">Should feature corrections be manual, assisted or both?</td><td>Affects complexity and usability.</td><td>Both: assisted first (tap-to-trace), manual fallback. (18A.6)</td></tr>
       <tr><td class="k">Should maps be exportable to other devices?</td><td>Raises package compatibility, privacy and sharing questions.</td><td>GPX track export in MVP; .trekmap package export in Phase 2. (18A.7)</td></tr>
@@ -785,8 +786,9 @@
   </div></div>
 
   <div class="dec"><div class="hd">18A.4 What counts as sufficient calibration</div><div class="bd">
-    <div class="row"><span class="lbl">Decision:</span> transforms are fitted in a local east/north tangent plane in metres centred on the map, never directly in latitude/longitude. 2 control points → similarity transform; 3+ → least-squares affine. Error is the leave-one-out RMSE. <b>Good</b>: ≥ 4 points, convex hull ≥ 50% of the map, RMSE ≤ 25 m. <b>Approximate</b>: 2–3 points, scale + north + anchor, or RMSE 25–100 m. <b>Insufficient</b>: fewer than 2 points or RMSE &gt; 100 m. Displayed uncertainty = √(GPS accuracy² + calibration RMSE²).</div>
-    <div class="row"><span class="lbl">Rationale:</span> an affine fit through exactly 3 points is always perfect and so reveals nothing about error; a fourth point makes accuracy measurable. 25 m is roughly typical consumer-GPS accuracy under tree cover, so below it the map is no longer the weakest link. Fitting in latitude/longitude would distort scale away from the equator.</div>
+    <div class="row"><span class="lbl">Decision (revised v2.1 after Phase 0 simulation):</span> transforms are fitted in a local east/north tangent plane in metres centred on the map, never directly in latitude/longitude. 2 control points → similarity transform; 3+ → least-squares affine. The reported calibration error is the <b>95% upper confidence bound of the map-wide RMS error</b>, estimated from the affine fit’s residuals and the leverage of every map point (needs 4+ points). <b>Good</b>: ≥ 5 points, error bound ≤ 25 m, control-point hull ≥ 15% of the map. <b>Approximate</b>: 2–4 points, scale + north + anchor, or bound 25–100 m. <b>Insufficient</b>: fewer than 2 points, collinear points, or bound &gt; 100 m. Displayed uncertainty = √(GPS accuracy² + calibration error²); when the error is not measurable, 100 m is assumed rather than 0.</div>
+    <div class="row"><span class="lbl">Rationale:</span> an affine fit through exactly 3 points is always perfect and so reveals nothing about error. 25 m is roughly typical consumer-GPS accuracy under tree cover, so below it the map is no longer the weakest link. Fitting in latitude/longitude would distort scale away from the equator.</div>
+    <div class="row"><span class="lbl">Phase 0 evidence:</span> 10,000 simulated calibrations on 5 maps with exact ground truth (USGS, swisstopo, GSI Japan, OpenTopoMap), with realistic tap and GPS errors and spread or clustered layouts. The v2 rule (leave-one-out RMSE, ≥ 4 points, ≥ 50% hull) failed both ways: realistic well-spread taps cover only 22–37% of a map, so Good was never reached; leave-one-out overstated error ≈ 2× for spread points yet <b>understated it in 89% of clustered cases</b>, the most dangerous ones. The revised rule rated only 4.5% of Goods worse than 25 m (worst 33 m). With 4 points too little evidence remains to judge error, so 4 points can never be Good. Map resolution also bounds accuracy: on coarse maps a few pixels of tap error is tens of metres.</div>
     <div class="row"><span class="lbl">Revisit if:</span> field tests show users routinely misjudge position at these thresholds, or the corpus shows well-made maps systematically exceeding 25 m because of projection effects that need a higher-order model.</div>
   </div></div>
 
@@ -794,6 +796,7 @@
     <div class="row"><span class="lbl">Decision:</span> supported through a clearly labelled <b>Sketch mode</b> built on progressive “I’m here” control points: whenever the user reaches a recognisable feature they tap it on the map and the current GPS fix is recorded. 1 point: no position shown (“walk to a landmark you can identify”). 2 points: similarity transform, Approximate. 3+ points: affine, Approximate or Good by the 18A.4 rules.</div>
     <div class="row"><span class="lbl">Rationale:</span> it needs no internet and no GIS knowledge, it improves as the user walks, and it never claims more accuracy than it has. It is also the most broadly useful calibration method for every map type, so it is a primary feature rather than a fallback.</div>
     <div class="row"><span class="lbl">Revisit if:</span> users frequently tap the wrong feature (visible as large residuals), which would call for outlier rejection or confirmation prompts.</div>
+    <div class="row"><span class="lbl">Datum note (v2.1):</span> coordinates printed on older maps use local datums, so the same numbers are not where GPS puts them: measured offsets are 86–93 m for US NAD27 sheets and ≈ 120–130 m for Survey of India (Kalianpur 1937) sheets. “I’m here” points are immune because they pair the map with the GPS’s own datum. Grid/coordinate entry must therefore ask for the map’s datum (default WGS84, with common local datums offered) or warn that positions may be ~100 m off. Datum conversions must use explicit parameters: the reference library silently applied no shift for the Indian datum when its grid file was absent.</div>
   </div></div>
 
   <div class="dec"><div class="hd">18A.6 Correction workflow</div><div class="bd">
@@ -867,7 +870,8 @@
       <tr><td class="k">Sketch mode</td><td>The labelled mode for maps without scale or coordinates, calibrated progressively with “I’m here” points.</td></tr>
       <tr><td class="k">Coordinate transform</td><td>A mathematical mapping between pixel coordinates, map coordinates and geographic coordinates.</td></tr>
       <tr><td class="k">Affine / similarity transform</td><td>Transform models: similarity allows scale, rotation and shift; affine also allows stretch and skew.</td></tr>
-      <tr><td class="k">RMSE (leave-one-out)</td><td>Typical calibration error, measured by fitting without each control point in turn and checking how far off it lands.</td></tr>
+      <tr><td class="k">Calibration error bound</td><td>A cautious estimate (95% upper bound) of how far off the dot can be anywhere on the map, worked out from how well the control points agree with each other and how they are spread.</td></tr>
+      <tr><td class="k">Datum</td><td>The reference model a map’s coordinates are based on. Older maps use local datums, so their printed coordinates can differ from GPS by ~100 m.</td></tr>
       <tr><td class="k">OCR</td><td>Optical character recognition: software that reads text in images.</td></tr>
       <tr><td class="k">Computer vision</td><td>Techniques for extracting useful information from images.</td></tr>
       <tr><td class="k">Vector geometry</td><td>Points, lines and shapes represented mathematically rather than as fixed pixels.</td></tr>
