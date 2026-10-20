@@ -1,0 +1,891 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Style-Preserving Offline Trekking Map App — Planning Document</title>
+<style>
+  @page {
+    size: A4;
+    margin: 18mm 18mm 20mm 18mm;
+    @bottom-left { content: "Style-Preserving Offline Trekking Map App — Planning Document"; font: 8pt Arial, Helvetica, sans-serif; color: #555; border-top: 0.5pt solid #dde2ea; vertical-align: top; padding-top: 3mm; }
+    @bottom-right { content: "Page " counter(page); font: 8pt Arial, Helvetica, sans-serif; color: #555; border-top: 0.5pt solid #dde2ea; vertical-align: top; padding-top: 3mm; }
+  }
+  * { box-sizing: border-box; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 9.5pt; line-height: 1.45; color: #1f2937; margin: 0; background: #fff; }
+  h1 { font-size: 22pt; color: #1a2b4a; margin: 14pt 0 8pt; line-height: 1.15; page-break-after: avoid; }
+  h2 { font-size: 13pt; color: #2a5db0; margin: 12pt 0 5pt; page-break-after: avoid; }
+  h3 { font-size: 10.5pt; color: #1a2b4a; margin: 10pt 0 4pt; page-break-after: avoid; }
+  p { margin: 0 0 6pt; }
+  ul, ol { margin: 0 0 6pt; padding-left: 14pt; }
+  li { margin: 0 0 3pt; }
+  table { width: 100%; border-collapse: collapse; margin: 4pt 0 8pt; font-size: 8.5pt; page-break-inside: auto; }
+  tr { page-break-inside: avoid; }
+  thead { display: table-header-group; }
+  th { background: #1a2b4a; color: #fff; text-align: left; padding: 5pt 6pt; font-weight: bold; }
+  td { padding: 5pt 6pt; border-bottom: 0.5pt solid #dde2ea; vertical-align: top; }
+  tbody tr:nth-child(even) td { background: #f4f6f9; }
+  td.k { font-weight: bold; color: #1a2b4a; }
+  .callout { background: #eef3fa; border: 0.8pt solid #2a5db0; padding: 8pt 10pt; margin: 8pt 0; font-weight: bold; color: #1a2b4a; page-break-inside: avoid; }
+  .callout.teal { border-color: #2a8a8a; }
+  .callout.orange { background: #fdf2e6; border-color: #e07b2a; }
+  .decided { background: #eef8f1; border-left: 3pt solid #2e8b57; padding: 6pt 9pt; margin: 6pt 0 8pt; font-size: 9pt; page-break-inside: avoid; }
+  .decided b.tag { color: #2e8b57; }
+  .note { font-size: 8pt; color: #6b7280; }
+  .new { display: inline-block; font-size: 7pt; font-weight: bold; color: #fff; background: #2e8b57; padding: 0 4pt; border-radius: 2pt; vertical-align: middle; margin-left: 4pt; }
+  .page-break { page-break-before: always; }
+  .cover { padding-top: 150pt; }
+  .cover h1 { font-size: 34pt; margin-bottom: 14pt; }
+  .cover .sub { font-size: 14pt; color: #6b7280; line-height: 1.4; margin-bottom: 40pt; }
+  .cover .meta p { margin: 0 0 9pt; }
+  .dec { border: 0.6pt solid #dde2ea; margin: 0 0 9pt; page-break-inside: avoid; }
+  .dec .hd { background: #1a2b4a; color: #fff; font-weight: bold; padding: 4pt 8pt; font-size: 9.5pt; }
+  .dec .bd { padding: 6pt 8pt 2pt; }
+  .dec .row { margin-bottom: 5pt; }
+  .dec .lbl { font-weight: bold; color: #2a5db0; }
+  .formula { font-family: "Courier New", monospace; background: #f4f6f9; padding: 1pt 4pt; }
+</style>
+</head>
+<body>
+
+<!-- ================= COVER ================= -->
+<section class="cover">
+  <h1>A map you bring.<br>A world you can navigate.</h1>
+  <div class="sub">Product vision and technical planning document for a cross-platform, offline-first trekking app that reconstructs user-provided maps while preserving their original visual identity.</div>
+  <div class="callout teal">Core concept<br>Photograph or import almost any map. Reconstruct it as an interactive digital map in the same visual style, then show the trekker’s live GPS position and recorded movement on it. Keep the original image as a calibrated fallback.</div>
+  <div class="meta" style="margin-top:40pt">
+    <p><b>Platforms:</b> iOS and Android</p>
+    <p><b>Initial experience:</b> 2D map reconstruction and offline GPS tracking</p>
+    <p><b>Later extension:</b> Optional 3D terrain visualisation</p>
+    <p><b>Status:</b> Planning — key decisions recorded (see section 18A). Technology stack is provisional until validated by the Phase 0 prototype.</p>
+    <p><b>Version:</b> 2.0 — 20 October 2026 (v1.0 plus decision record)</p>
+  </div>
+  <p class="note" style="margin-top:110pt">Prepared as a working product brief. It distinguishes the agreed vision from assumptions, technical constraints and decisions. Version 2 resolves the open questions of version 1; each decision lists the conditions under which it should be revisited.</p>
+</section>
+
+<!-- ================= CONTENTS ================= -->
+<section class="page-break">
+  <h1>Contents</h1>
+  <ul style="list-style:none;padding-left:0">
+    <li>• 1. Executive summary</li>
+    <li>• 2. Product vision and principles</li>
+    <li>• 3. Problem statement and target users</li>
+    <li>• 4. Core experience and user journeys</li>
+    <li>• 5. Functional requirements</li>
+    <li>• 6. Map reconstruction: the central technical challenge</li>
+    <li>• 7. Spatial calibration and GPS alignment</li>
+    <li>• 8. Offline-first system architecture</li>
+    <li>• 9. Data model and local storage</li>
+    <li>• 10. User interface and interaction design</li>
+    <li>• 11. iOS and Android considerations</li>
+    <li>• 12. Performance, battery and reliability</li>
+    <li>• 13. Safety, privacy and security</li>
+    <li>• 14. Testing and validation strategy</li>
+    <li>• 15. MVP definition and roadmap</li>
+    <li>• 16. Risks and mitigations</li>
+    <li>• 17. Success metrics</li>
+    <li>• 18. Open questions and decisions</li>
+    <li>• 18A. Decision record <span class="new">NEW</span></li>
+    <li>• 19. Glossary</li>
+  </ul>
+  <p class="note">This document is intentionally comprehensive. It is a planning baseline, not a claim that arbitrary map reconstruction or perfect navigation accuracy has already been solved. Green “Decided” boxes mark places where version 2 adds a decision; full reasoning is in section 18A.</p>
+</section>
+
+<!-- ================= 1 ================= -->
+<section class="page-break">
+  <h1>1. Executive summary</h1>
+  <p>The proposed app is an offline-first trekking companion built around a distinctive idea: the user brings the map, and the app turns that map into an interactive digital experience without replacing its original visual identity.</p>
+  <p>The user photographs or imports a map. The app analyses its visual content and builds a digital representation that can include trails, rivers, contour lines, mountains, labels, landmarks, campsites and other map elements. Unlike conventional mapping apps, it should not force every map into a standard cartographic style. A traditional topographic map should still look like a traditional topographic map; an illustrated or cartoon treasure map should retain its colours, textures, symbols and visual theme.</p>
+  <p>Once the user marks their starting point and the map is calibrated as far as the available information permits, GPS updates the user’s position on the reconstructed map. The app records movement, can show the track already travelled, and keeps the map and trek data on the device so navigation can continue without mobile data.</p>
+  <p>A calibrated overlay on the original photograph is retained as a failsafe. The primary experience is the reconstructed digital map; the original image remains accessible if the reconstruction is incomplete, uncertain or visually wrong. 3D terrain is a later phase, not a requirement for the first release.</p>
+  <div class="callout">Product thesis: make a user-supplied map usable as a live, offline navigation surface while preserving the map’s own character. The differentiator is not merely GPS tracking; it is style-preserving map digitisation paired with a trustworthy spatial model.</div>
+  <h2>What the product is</h2>
+  <ul>
+    <li>A cross-platform mobile app for iPhone and Android.</li>
+    <li>A map capture/import, reconstruction, calibration and navigation workflow.</li>
+    <li>An offline-first system whose essential navigation features do not depend on a remote service.</li>
+    <li>A visual reconstruction system with a separate internal representation for geometry, features and coordinates.</li>
+    <li>A 2D-first product with a possible future 3D view.</li>
+  </ul>
+  <h2>What the product is not</h2>
+  <ul>
+    <li>Not simply a camera overlay on a paper map.</li>
+    <li>Not a replacement for all global map providers or a guarantee of turn-by-turn routing on arbitrary maps.</li>
+    <li>Not a promise that every arbitrary image can be reconstructed perfectly without user review.</li>
+    <li>Not a substitute for a compass, proper outdoor preparation or established safety practices.</li>
+  </ul>
+
+  <h1>2. Product vision and principles</h1>
+  <h2>Vision statement</h2>
+  <p>A trekker can take the map they already trust, convert it into a digital map that still looks like itself, and see their real-world movement on it—without needing internet access during the trek.</p>
+  <h2>Design principles</h2>
+  <table>
+    <thead><tr><th style="width:45%">Principle</th><th>Meaning for product decisions</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Preserve the source identity</td><td>Retain the map’s palette, texture, typography, symbols, line styles, illustration language and overall composition wherever possible.</td></tr>
+      <tr><td class="k">Structure beneath the surface</td><td>The app should understand geometry and feature types independently of how they are drawn.</td></tr>
+      <tr><td class="k">Offline by default</td><td>The map, calibration, navigation state and recorded track must be stored locally and remain usable without connectivity.</td></tr>
+      <tr><td class="k">Calibration before confidence</td><td>A location marker should only be as confident as the map’s geographic alignment and GPS conditions allow.</td></tr>
+      <tr><td class="k">Make uncertainty visible</td><td>When the app is unsure whether a line is a trail or river, or when georeferencing is weak, it should ask the user or clearly communicate uncertainty.</td></tr>
+      <tr><td class="k">Keep a fallback</td><td>The original map image and its GPS/track overlay should remain available.</td></tr>
+      <tr><td class="k">User control</td><td>The user chooses when to create a map, start tracking, stop tracking, export or delete trek data.</td></tr>
+      <tr><td class="k">Build 2D first</td><td>Prove reconstruction, calibration, offline tracking and reliability before adding 3D.</td></tr>
+    </tbody>
+  </table>
+  <h2>The most important architectural separation</h2>
+  <p>The map should have at least two related but separate representations:</p>
+  <ul>
+    <li><b>Visual representation:</b> what the user sees—textures, colours, labels, hand-drawn features, icons and theme.</li>
+    <li><b>Spatial/semantic representation:</b> the geometry and meaning the app uses—paths, points, polygons, contours, possible elevation values, labels, confidence scores and coordinate transforms.</li>
+  </ul>
+  <p>For example, a river can be stored as a polyline while being rendered as a hand-painted blue ribbon. A trail can be stored as a path while retaining the source map’s dotted red styling. This avoids forcing the internal data model to dictate the visual style.</p>
+  <h2>Product quality hierarchy</h2>
+  <ol>
+    <li>Navigation correctness and safety-relevant honesty.</li>
+    <li>Preservation of the source map’s appearance.</li>
+    <li>Offline reliability and recoverability.</li>
+    <li>Usability and speed of the capture-to-navigation workflow.</li>
+    <li>Advanced visualisation such as 3D.</li>
+  </ol>
+
+  <h1>3. Problem statement and target users</h1>
+  <h2>Problem</h2>
+  <p>Trekkers may rely on printed maps, downloaded images, guidebook maps or maps made for a specific trail. Conventional GPS apps usually display their own base map rather than the exact map a trekker has. A photograph of a paper map is easy to carry but does not automatically show the user's live position. Generic map conversion can lose the source map’s visual character, and remote areas may have limited or no data connectivity.</p>
+  <h2>Primary user groups</h2>
+  <table>
+    <thead><tr><th style="width:28%">User group</th><th>Need</th><th>Likely challenge</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Independent trekker</td><td>See live location on a map they already have.</td><td>Map may be a photo or scan with no explicit coordinates.</td></tr>
+      <tr><td class="k">Backpacker / multi-day hiker</td><td>Offline navigation and track history across long trips.</td><td>Battery, storage and reliable background tracking.</td></tr>
+      <tr><td class="k">Map enthusiast</td><td>Preserve an illustrated or specialised map’s aesthetic.</td><td>Style must survive conversion rather than become generic.</td></tr>
+      <tr><td class="k">Guide / group leader</td><td>Prepare a map before a trip and inspect movement afterwards.</td><td>Calibration, sharing/export and understandable confidence.</td></tr>
+      <tr><td class="k">Casual outdoor explorer</td><td>Simple setup without GIS expertise.</td><td>Need a guided workflow and minimal technical terminology.</td></tr>
+    </tbody>
+  </table>
+  <h2>Representative use cases</h2>
+  <ul>
+    <li>Photograph a folded paper trail map at the trailhead and use it for a day hike.</li>
+    <li>Import a scanned map from a guidebook, calibrate it and track a multi-day trek.</li>
+    <li>Use a hand-drawn or illustrated map for a themed outdoor activity while retaining its visual style.</li>
+    <li>Review the path already travelled after losing sight of a trail junction.</li>
+    <li>Continue navigating when mobile data disappears.</li>
+    <li>Open the original image when the reconstructed version omits or misclassifies a detail.</li>
+  </ul>
+
+  <h1>4. Core experience and user journeys</h1>
+  <h2>Journey A: create a map</h2>
+  <ol>
+    <li>Open the app and choose <b>Capture map</b> or <b>Import image/PDF page</b>.</li>
+    <li>Capture the map under useful lighting, or crop/rotate an imported image.</li>
+    <li>The app corrects perspective and image distortion where possible, while preserving the untouched original.</li>
+    <li>The app detects likely text, lines, symbols, regions, labels and visual styles.</li>
+    <li>The user sees a preview of the reconstructed map and can inspect uncertain elements.</li>
+    <li>The user confirms the map name, optional notes and whether to store a local copy of the source image.</li>
+    <li>The app asks for calibration: known coordinates/grid, scale and orientation information, reference points, or a guided best-effort method if the map has no geographic references.</li>
+    <li>The map is saved locally and can be reopened without internet.</li>
+  </ol>
+  <h2>Journey B: start a trek</h2>
+  <ol>
+    <li>Open a saved map and select <b>Start trek</b>.</li>
+    <li>Choose or confirm the starting point on the map.</li>
+    <li>If calibration is not complete, the app explains what is missing and offers the best available calibration method.</li>
+    <li>The app checks location permission, GPS availability and estimated location quality.</li>
+    <li>Tracking starts only after clear user confirmation.</li>
+    <li>The current position appears on the reconstructed map, and the travelled path is recorded.</li>
+    <li>The user can switch to the original-image fallback at any time.</li>
+  </ol>
+  <div class="decided"><b class="tag">Decided (18A.5):</b> during a trek the user can tap <b>“I’m here”</b> on any recognisable feature to add a GPS control point. Calibration improves progressively as they walk; this is how maps without coordinates become usable.</div>
+  <h2>Journey C: finish and review</h2>
+  <ol>
+    <li>Tap <b>Finish trek</b> to stop recording.</li>
+    <li>Show duration, distance travelled, track and any location-quality warnings.</li>
+    <li>Save the trek locally with the map it used.</li>
+    <li>Offer export/share options only after the user explicitly chooses them.</li>
+    <li>Allow the user to rename, archive or delete the trek.</li>
+  </ol>
+  <h2>Journey D: reconstruction is incomplete</h2>
+  <ul>
+    <li>Display the original map image alongside or behind the reconstructed view.</li>
+    <li>Mark uncertain features in a review interface before the user relies on them.</li>
+    <li>Allow corrections such as 'this is a trail', 'this is a river', 'move this landmark' or 'do not include this feature'.</li>
+    <li>Keep corrections local initially; no upload should be required for the map to become usable.</li>
+    <li>Do not silently invent missing paths, labels or terrain.</li>
+  </ul>
+
+  <h1>5. Functional requirements</h1>
+  <h2>5.1 Capture and import</h2>
+  <ul>
+    <li>Support camera capture with framing guidance and a review step.</li>
+    <li>Support importing common image formats; evaluate PDF page import for the initial release or a follow-up.</li>
+    <li>Keep the original source immutable so later reconstruction changes can be compared against it.</li>
+    <li>Support crop, rotate and perspective correction without overwriting the original.</li>
+    <li>Detect blur, glare, low contrast, shadows, folds and incomplete map boundaries; suggest retaking only when materially useful.</li>
+    <li>Handle large images without blocking the interface; show progress and allow cancellation.</li>
+  </ul>
+  <div class="decided"><b class="tag">Decided (18A.2):</b> MVP accepts JPEG, PNG, HEIC, WebP and a single PDF page. Limits: 100 MB / 60 MP input; working image capped at 8000 px on the long edge; original always kept at full resolution. GeoPDF/GeoTIFF in Phase 2.</div>
+  <h2>5.2 Reconstruction and visual fidelity</h2>
+  <ul>
+    <li>Produce a digital 2D representation with the source map’s visual language.</li>
+    <li>Preserve colour relationships, textures, labels, iconography, line styles and overall composition.</li>
+    <li>Retain source pixels or textured regions when redrawing would reduce fidelity.</li>
+    <li>Represent detectable features as editable objects beneath the rendered visual surface.</li>
+    <li>Provide confidence or review status for detected features.</li>
+    <li>Support a user correction workflow and preserve corrections across app restarts.</li>
+    <li>Never treat an unverified detected line as a confirmed navigable trail.</li>
+  </ul>
+  <div class="decided"><b class="tag">Decided (18A.3, 18A.6):</b> MVP reconstruction = rectified source raster as the base layer + OCR labels + colour-segmented trail/water candidates as vector features. Corrections are assisted (confirm/reject, tap-to-trace) with manual drawing as fallback. Full stylised redraw is Phase 2.</div>
+  <h2>5.3 Calibration</h2>
+  <ul>
+    <li>Offer coordinate-grid or known-coordinate calibration when available.</li>
+    <li>Offer scale and orientation inputs when they are printed on the map.</li>
+    <li>Allow the user to mark multiple reference points and associate them with known geographic positions where possible.</li>
+    <li>Explain that a single start point anchors one position but does not independently establish map scale, rotation and geographic distortion.</li>
+    <li>Store the calibration method, transform, residual/error estimate and confidence.</li>
+    <li>Let the user recalibrate if the initial alignment is visibly wrong.</li>
+    <li>Keep image-space navigation available as a limited fallback when true geographic alignment cannot be established.</li>
+  </ul>
+  <div class="decided"><b class="tag">Decided (18A.4):</b> calibration status is Good / Approximate / Insufficient with measurable thresholds (Good = 4+ well-spread points and leave-one-out RMSE ≤ 25 m). See section 7.3 and 18A.4.</div>
+  <h2>5.4 Navigation and tracking</h2>
+  <ul>
+    <li>Show the live GPS position and heading where device sensors support it.</li>
+    <li>Record a breadcrumb track with timestamps and location-quality metadata.</li>
+    <li>Calculate distance travelled and elapsed time, with appropriate smoothing and clear distinction between measured and estimated values.</li>
+    <li>Support pause/resume and explicit stop/finish controls.</li>
+    <li>Handle app backgrounding, screen lock, interruptions and process termination as reliably as the platform permits.</li>
+    <li>Show last known position and its age if location updates stop.</li>
+    <li>Indicate poor GPS conditions and avoid implying that the dot is exact.</li>
+    <li>Do not promise turn-by-turn routing unless a trustworthy route graph and route-validation system are separately designed.</li>
+  </ul>
+  <div class="decided"><b class="tag">Decided (18A.10–18A.12):</b> “While using the app” permission only; sampling every 5 m or 10 s (30 s battery saver); fixes worse than 50 m excluded from distance; north-up default with optional heading-up.</div>
+  <h2>5.5 Original-image failsafe</h2>
+  <ul>
+    <li>Retain a view of the original source image.</li>
+    <li>Draw the GPS position and recorded track on the original image using the same spatial calibration where valid.</li>
+    <li>Allow quick switching between reconstructed and original views.</li>
+    <li>Clearly indicate when the fallback alignment is approximate or only image-space based.</li>
+    <li>Ensure the fallback is available offline and does not depend on a cloud copy.</li>
+  </ul>
+  <h2>5.6 Offline and local management</h2>
+  <ul>
+    <li>Save map image, reconstruction data, calibration and trek data locally.</li>
+    <li>Allow opening and using a completed map in airplane mode.</li>
+    <li>Persist work progressively so a crash does not discard the entire reconstruction.</li>
+    <li>Provide storage usage, delete-map and delete-trek controls.</li>
+    <li>Support export as an optional user action; no automatic upload is required.</li>
+    <li>Consider encrypted app storage and device backup behaviour during implementation.</li>
+  </ul>
+
+  <h1>6. Map reconstruction: the central technical challenge</h1>
+  <p>The defining technical challenge is not drawing a map-like screen. It is turning an arbitrary visual source into a structured, faithful and useful digital representation. Source maps vary widely: some have clear grids and legends, while others are artistic, low-resolution, folded, handwritten or designed only for visual storytelling.</p>
+  <h2>6.1 Suggested processing pipeline</h2>
+  <table>
+    <thead><tr><th style="width:28%">Stage</th><th>Purpose</th><th>Output</th></tr></thead>
+    <tbody>
+      <tr><td class="k">1. Preserve source</td><td>Store the untouched input and basic metadata.</td><td>Original image asset</td></tr>
+      <tr><td class="k">2. Image preparation</td><td>Crop, rotate, correct perspective, improve contrast where useful.</td><td>Working image plus transform history</td></tr>
+      <tr><td class="k">3. Visual analysis</td><td>Estimate palette, regions, text blocks, lines, symbols and textures.</td><td>Image feature candidates</td></tr>
+      <tr><td class="k">4. Text and symbol detection</td><td>Read labels and identify likely map symbols.</td><td>Labels and symbol candidates with confidence</td></tr>
+      <tr><td class="k">5. Geometry extraction</td><td>Trace lines, boundaries, point symbols and contour-like features.</td><td>Vector candidates</td></tr>
+      <tr><td class="k">6. Semantic classification</td><td>Estimate whether candidates are trails, rivers, contours, boundaries or decorative art.</td><td>Typed features with confidence</td></tr>
+      <tr><td class="k">7. Style reconstruction</td><td>Render extracted features in the original visual style; retain source textures where appropriate.</td><td>Layered digital map</td></tr>
+      <tr><td class="k">8. Human review</td><td>Let the user correct uncertain or important elements.</td><td>Reviewed feature set</td></tr>
+      <tr><td class="k">9. Calibration</td><td>Relate map positions to geographic positions where possible.</td><td>Coordinate transform and confidence</td></tr>
+      <tr><td class="k">10. Local packaging</td><td>Persist everything needed for offline viewing and tracking.</td><td>Offline map bundle</td></tr>
+    </tbody>
+  </table>
+  <h2>6.2 Conventional algorithms versus machine learning</h2>
+  <p>A sophisticated program can do a large amount without a generative AI system. Image processing, OCR, connected-component analysis, edge detection, line tracing, colour clustering, geometric transforms and deterministic rendering are useful foundations. Local machine-learning models may help classify difficult symbols or distinguish features when rules are insufficient.</p>
+  <p>A generative model should not be allowed to invent geographic detail. It might produce a visually plausible but incorrect trail, move a river or alter a label. For a navigation product, plausible-looking errors are especially dangerous. The preferred design is evidence-based extraction plus deterministic rendering, with optional ML assistance and explicit user review.</p>
+  <div class="decided"><b class="tag">Decided (18A.1):</b> stages 2–6 run in a shared C++ core built on OpenCV; OCR uses Google ML Kit on-device text recognition. No generative model is used anywhere in the pipeline.</div>
+  <h2>6.3 Style-preserving rendering</h2>
+  <ul>
+    <li>Maintain a style palette extracted from the source: colours, stroke widths, line patterns, textures and text treatments.</li>
+    <li>Keep a mapping between each digital object and the source region(s) that support it.</li>
+    <li>Use original pixels or image patches as texture layers for complex illustration where vector recreation would be costly or inaccurate.</li>
+    <li>Use vector geometry for features that benefit from interaction, scaling and spatial queries.</li>
+    <li>Use separate visual layers for background texture, terrain art, text, detected features, user annotations, GPS dot and track.</li>
+    <li>Make the GPS marker visually legible without changing the underlying map theme.</li>
+  </ul>
+  <h2>6.4 Why a hybrid reconstruction is likely</h2>
+  <p>Pure vector redraw risks losing artistic texture and detail. Pure image overlay does not provide structured, editable features. A hybrid system can preserve complex source art as raster textures while tracing important features into vectors. The app can therefore keep the map’s appearance while making selected objects interactive.</p>
+  <h2>6.5 Confidence and review</h2>
+  <p>Every detected feature should have a status such as candidate, user-confirmed or rejected. Confidence is an engineering aid, not a guarantee of correctness. High-impact features—especially trails, crossings, cliff symbols and junctions—should be reviewable. The app should not make an unverified feature appear more authoritative than the source.</p>
+  <h2>6.6 Limits to acknowledge</h2>
+  <ul>
+    <li>Low-resolution, blurry or occluded maps may not contain enough detail to extract all features.</li>
+    <li>Legends vary; the same colour or line style can mean different things across maps.</li>
+    <li>Decorative illustrations can resemble geographic features.</li>
+    <li>Hand-drawn maps may not be to scale or geographically accurate.</li>
+    <li>Some maps distort distances intentionally for readability.</li>
+    <li>Text recognition can confuse similar characters or labels.</li>
+    <li>Reconstruction speed and fidelity will depend on map complexity and device capability.</li>
+  </ul>
+
+  <h1>7. Spatial calibration and GPS alignment</h1>
+  <div class="callout">Critical constraint: marking the user’s starting point on the map is useful, but one point alone generally cannot determine geographic scale, rotation, projection or distortion. The product must provide additional calibration options or clearly limit what it claims.</div>
+  <h2>7.1 Coordinate spaces</h2>
+  <p>The app should distinguish at least three coordinate spaces:</p>
+  <ul>
+    <li><b>Image space:</b> pixel coordinates in the original photograph or scan.</li>
+    <li><b>Reconstructed-map space:</b> coordinates used by the digital rendering and its feature geometry.</li>
+    <li><b>Geographic space:</b> latitude/longitude or an appropriate local coordinate reference used to associate the map with GPS.</li>
+  </ul>
+  <p>A stored transformation links these spaces. It should be possible to transform a GPS location to the corresponding position on the reconstructed map and to the original image for the failsafe.</p>
+  <div class="decided"><b class="tag">Decided (18A.4):</b> control points are stored in WGS84, but transforms are fitted in a <b>local tangent plane (east/north metres) centred on the map</b>, never directly in latitude/longitude, which would introduce scale distortion.</div>
+  <h2>7.2 Calibration methods, in preferred order</h2>
+  <table>
+    <thead><tr><th style="width:28%">Method</th><th>What user provides</th><th>Strength / limitation</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Known grid or coordinates</td><td>Map grid intersections or printed coordinate labels.</td><td>Strong when the map is trustworthy and enough references are available.</td></tr>
+      <tr><td class="k">Multiple known landmarks</td><td>Several points with known real-world coordinates.</td><td>Can estimate alignment and reveal error; the landmarks must be correctly identified.</td></tr>
+      <tr><td class="k">“I’m here” GPS control points <span class="new">NEW</span></td><td>While on the trek, tap recognisable features as the user reaches them; the current GPS fix is recorded.</td><td>Works offline on any map; improves with every point. Accuracy limited by GPS and correct identification of the feature.</td></tr>
+      <tr><td class="k">Scale plus orientation plus anchor</td><td>Printed scale, north/orientation and a known starting point.</td><td>Useful for some maps, but projection and local distortion can still matter.</td></tr>
+      <tr><td class="k">Reference map alignment</td><td>User aligns the source with a known geographic layer, if available offline.</td><td>Potentially useful but introduces dependency on reference data and licensing. <i>Deferred to Phase 3.</i></td></tr>
+      <tr><td class="k">Single-point anchor only</td><td>One current position marked on the map.</td><td>Anchors one point but cannot establish full map scale and orientation on its own.</td></tr>
+      <tr><td class="k">Image-space-only mode</td><td>User marks the starting location and accepts approximate tracking.</td><td>Can provide a visual fallback, but should not be presented as reliable geographic navigation.</td></tr>
+    </tbody>
+  </table>
+  <h2>7.3 Calibration workflow</h2>
+  <ol>
+    <li>Ask whether the map has a coordinate grid, scale bar, north arrow or labelled coordinates.</li>
+    <li>Prefer the simplest reliable method supported by the source.</li>
+    <li>Where possible, ask for multiple reference points spread across the map rather than clustered together.</li>
+    <li>Estimate alignment quality and show a simple status such as Good, Approximate or Insufficient data.</li>
+    <li>Allow the user to preview the GPS marker on the map before starting the trek.</li>
+    <li>Save the calibration inputs and method so the same map can be reused.</li>
+    <li>Recalibrate if the user changes the crop or image transform.</li>
+  </ol>
+  <h3>Calibration status thresholds <span class="new">NEW</span></h3>
+  <table>
+    <thead><tr><th style="width:20%">Status</th><th>Criteria</th><th>App behaviour</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Good</td><td>≥ 4 control points, convex hull covering ≥ 50% of the map, leave-one-out RMSE ≤ 25 m.</td><td>Normal GPS dot with combined uncertainty circle.</td></tr>
+      <tr><td class="k">Approximate</td><td>Exactly 3 points (error not measurable), or 2 points (similarity fit), or scale + north + anchor, or RMSE 25–100 m.</td><td>Dot shown with an “Approximate” badge and enlarged uncertainty circle.</td></tr>
+      <tr><td class="k">Insufficient</td><td>Fewer than 2 points, or RMSE &gt; 100 m.</td><td>No geographic dot; track kept, user prompted to add an “I’m here” point.</td></tr>
+    </tbody>
+  </table>
+  <p>Displayed uncertainty radius = <span class="formula">√(GPS accuracy² + calibration RMSE²)</span>. Transform model: 2 points → similarity (scale, rotation, translation); 3+ points → least-squares affine. Higher-order or piecewise models are Phase 2.</p>
+  <h2>7.4 GPS limitations</h2>
+  <ul>
+    <li>GPS may work without mobile data, but accuracy varies with terrain, tree cover, weather and device hardware.</li>
+    <li>Mountain walls and narrow valleys can block or reflect satellite signals.</li>
+    <li>GPS noise can make the dot jump or make recorded distance appear longer than actual travel.</li>
+    <li>Compass heading can be unreliable near metal objects or when the user is stationary.</li>
+    <li>The UI should show accuracy radius or quality status where practical, not just a precise-looking dot.</li>
+    <li>Track smoothing should not erase meaningful switchbacks or falsely snap users to an unverified trail.</li>
+  </ul>
+  <h2>7.5 What the app can honestly promise</h2>
+  <p>When calibration is strong and GPS conditions are good, the app can show a useful live position on the source map. When either is weak, it should show the uncertainty and keep the original map accessible. It should not claim that a start-point tap alone makes any map geographically accurate.</p>
+
+  <h1>8. Offline-first system architecture</h1>
+  <p>A suitable high-level architecture separates the mobile interface, reconstruction pipeline, map model, spatial engine, GPS service and local persistence. These can be modules within one mobile app; they do not require a server.</p>
+  <table>
+    <thead><tr><th style="width:24%">Module</th><th>Responsibilities</th><th style="width:24%">Offline requirement</th><th style="width:22%">Chosen technology <span class="new">NEW</span></th></tr></thead>
+    <tbody>
+      <tr><td class="k">Mobile UI</td><td>Capture/import, review, calibration, map viewing, trek controls.</td><td>Fully available offline.</td><td>Flutter</td></tr>
+      <tr><td class="k">Image pipeline</td><td>Crop, rectify, normalise and prepare images.</td><td>Runs on device.</td><td>C++ core + OpenCV (dart:ffi)</td></tr>
+      <tr><td class="k">Reconstruction engine</td><td>Detect text/features, create map layers, assign confidence.</td><td>Core path runs on device.</td><td>C++ core + OpenCV; ML Kit text recognition</td></tr>
+      <tr><td class="k">Map model</td><td>Store visual layers, geometry, labels, feature metadata and style.</td><td>Local, versioned representation.</td><td>Versioned map package (manifest + JSON + tiles)</td></tr>
+      <tr><td class="k">Spatial engine</td><td>Transform image/map/GPS coordinates and calculate spatial relationships.</td><td>Local calculations.</td><td>C++ core (shared)</td></tr>
+      <tr><td class="k">Location service</td><td>Request location updates and manage trek state.</td><td>Uses device sensors; no network required for core GPS.</td><td>Native: Kotlin (Android) / Swift (iOS)</td></tr>
+      <tr><td class="k">Renderer</td><td>Draw map layers, GPS dot, track and selected features.</td><td>Local rendering.</td><td>Custom tiled Flutter canvas</td></tr>
+      <tr><td class="k">Storage layer</td><td>Persist images, map packages, calibration, settings and tracks.</td><td>Local database/files.</td><td>SQLite (WAL) + package folders</td></tr>
+      <tr><td class="k">Optional sync/export</td><td>User-initiated backup, sharing or export in a future phase.</td><td>Never required for navigation.</td><td>GPX via OS share sheet (MVP)</td></tr>
+    </tbody>
+  </table>
+  <h2>8.1 Data flow</h2>
+  <p>Capture/import → image preparation → feature extraction → style-preserving reconstruction → user review → calibration → local map package → GPS tracking and rendering. The original image remains attached to the map package throughout.</p>
+  <h2>8.2 Cross-platform strategy</h2>
+  <p>The product must target both iOS and Android. A shared UI and shared core logic may reduce duplicated work, but camera, location permissions, background execution, file import and some image-processing capabilities are platform-specific. The implementation choice should be made after a small technical prototype, not by assuming one framework automatically solves all native requirements.</p>
+  <ul>
+    <li>Evaluate a shared cross-platform framework for common UI and product logic.</li>
+    <li>Keep platform-specific adapters for location, camera, permissions, background operation and file access.</li>
+    <li>Benchmark image processing on representative lower-, mid- and high-tier devices.</li>
+    <li>Use the same reconstruction and map-data specification across platforms so a map package has consistent behaviour.</li>
+    <li>Do not commit to a specific stack until performance, plugin reliability and background tracking are tested.</li>
+  </ul>
+  <div class="decided"><b class="tag">Decided (18A.1) — provisional stack for Phase 0:</b> Flutter UI and renderer; shared C++/OpenCV core via FFI; native location adapters; ML Kit OCR; SQLite. <b>Kill criterion:</b> if Flutter cannot record a 3-hour background track without unexplained gaps on a mid-range Android device, or cannot pan/zoom an 8000 px tiled map smoothly, switch the UI layer to fully native.</div>
+  <h2>8.3 Local processing strategy</h2>
+  <p>The default should be on-device processing. Optional cloud processing, if ever introduced, must be opt-in, clearly explained and never required to navigate. This supports privacy, offline use and predictability. It also means the reconstruction pipeline must be designed to fit device memory, CPU/GPU and thermal limits.</p>
+  <div class="decided"><b class="tag">Decided (18A.8):</b> no cloud processing in MVP or Phase 2.</div>
+
+  <h1>9. Data model and local storage</h1>
+  <p>The data model should preserve source evidence, reconstructed features and geographic alignment independently. The following is conceptual, not a final database schema.</p>
+  <table>
+    <thead><tr><th style="width:30%">Entity</th><th>Key information</th></tr></thead>
+    <tbody>
+      <tr><td class="k">MapProject</td><td>Unique ID, title, creation date, source type, status, reconstruction version, last opened.</td></tr>
+      <tr><td class="k">SourceAsset</td><td>Original image/PDF page, dimensions, checksum, orientation, crop and perspective transforms.</td></tr>
+      <tr><td class="k">MapLayer</td><td>Layer order, visibility, rendering mode, style metadata, source asset references.</td></tr>
+      <tr><td class="k">MapFeature</td><td>Feature ID, type candidate, geometry, label, confidence, review state, source region, style reference.</td></tr>
+      <tr><td class="k">Calibration</td><td>Method, reference points, transform, scale/orientation inputs, coordinate reference assumptions, estimated residuals and confidence.</td></tr>
+      <tr><td class="k">ControlPoint <span class="new">NEW</span></td><td>Map pixel position, WGS84 position, source (grid entry / known landmark / “I’m here” GPS fix), GPS accuracy at capture, timestamp, leave-one-out residual.</td></tr>
+      <tr><td class="k">TrekSession</td><td>Start/end times, associated map, state, tracking configuration and user notes.</td></tr>
+      <tr><td class="k">TrackPoint</td><td>Latitude/longitude, timestamp, reported accuracy, optional altitude/heading/speed, validity flags.</td></tr>
+      <tr><td class="k">UserCorrection</td><td>Feature edit, prior value, new value, timestamp and source map version.</td></tr>
+      <tr><td class="k">AppSettings</td><td>Tracking preferences, privacy choices, display preferences and accessibility settings.</td></tr>
+    </tbody>
+  </table>
+  <h2>Storage principles</h2>
+  <ul>
+    <li>Keep source image and reconstruction assets linked but independently recoverable.</li>
+    <li>Use a versioned map-package format so future reconstruction improvements do not silently corrupt old maps.</li>
+    <li>Persist track points in batches and recover safely after process termination.</li>
+    <li>Use spatial indexing only where it improves performance; avoid premature complexity.</li>
+    <li>Expose storage usage and allow the user to delete map packages and tracks.</li>
+    <li>Plan for low-storage situations and interrupted imports.</li>
+    <li>Define whether user exports contain raw GPS coordinates and communicate this clearly.</li>
+  </ul>
+  <h2>Map package concept</h2>
+  <p>A completed map can be treated as a self-contained local package: source image, corrected working image, rendered layers or textures, feature geometry, style metadata, calibration transform, confidence/review data and optional user notes. It should reopen without needing to rerun every reconstruction stage.</p>
+  <div class="decided"><b class="tag">Decided (18A.7):</b> one folder per map containing <span class="formula">manifest.json</span> (with format version), <span class="formula">source/</span>, <span class="formula">working/</span>, <span class="formula">tiles/</span>, <span class="formula">features.json</span>, <span class="formula">style.json</span> and <span class="formula">calibration.json</span>. Designed to be zipped as a <span class="formula">.trekmap</span> file in Phase 2. Treks and track points live in the app’s SQLite database (WAL mode).</div>
+
+  <h1>10. User interface and interaction design</h1>
+  <h2>Primary screens</h2>
+  <table>
+    <thead><tr><th style="width:30%">Screen</th><th>Purpose / essential controls</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Home / Maps</td><td>Create map, import map, open recent maps, see stored trek sessions and available storage.</td></tr>
+      <tr><td class="k">Capture</td><td>Camera framing, glare/blur guidance, retake and confirm.</td></tr>
+      <tr><td class="k">Crop &amp; correct</td><td>Crop, rotate, perspective correction, reset to original.</td></tr>
+      <tr><td class="k">Reconstruction preview</td><td>Compare source and reconstructed views; inspect uncertain features.</td></tr>
+      <tr><td class="k">Feature review</td><td>Confirm, edit or reject candidate labels, trails, rivers and landmarks.</td></tr>
+      <tr><td class="k">Calibration</td><td>Choose calibration method, place reference points, enter known scale/coordinates, preview alignment.</td></tr>
+      <tr><td class="k">Map view</td><td>Pan/zoom, live position, track, layer toggle, source-image fallback and location-quality status.</td></tr>
+      <tr><td class="k">Trek controls</td><td>Start, pause, resume, finish, elapsed time, distance and tracking status.</td></tr>
+      <tr><td class="k">Trek summary</td><td>Track overview, duration, distance, notes and export/delete options.</td></tr>
+      <tr><td class="k">Settings &amp; privacy</td><td>Location permissions, background tracking explanation, data management and privacy controls.</td></tr>
+    </tbody>
+  </table>
+  <h2>Interaction guidelines</h2>
+  <ul>
+    <li>Make the first successful map creation achievable without GIS knowledge.</li>
+    <li>Use plain language; explain calibration only when needed.</li>
+    <li>Show reconstruction progress and allow cancellation without losing the original.</li>
+    <li>Distinguish 'map reconstruction complete' from 'geographic calibration complete'.</li>
+    <li>Make the current position visually obvious while preserving the map style.</li>
+    <li>Keep the fallback one tap away during a trek.</li>
+    <li>Use large, high-contrast controls suitable for outdoor use and gloved hands where practical.</li>
+    <li>Prevent accidental trek termination; make pause and finish states clear.</li>
+    <li>Offer a north-up mode and optional heading-up mode if compass quality permits.</li>
+  </ul>
+  <h2>Accessibility and outdoor usability</h2>
+  <ul>
+    <li>Support system text scaling and screen-reader labels.</li>
+    <li>Do not rely on colour alone to distinguish GPS state or feature type.</li>
+    <li>Provide contrast and marker-size options without forcing a complete map restyle.</li>
+    <li>Support dark surroundings and bright daylight through carefully tested contrast choices.</li>
+    <li>Keep critical controls discoverable and avoid tiny touch targets.</li>
+    <li>Consider haptic feedback for tracking start/stop and selected warnings.</li>
+  </ul>
+
+  <h1>11. iOS and Android considerations</h1>
+  <h2>iOS</h2>
+  <ul>
+    <li>Request location permissions in context and explain the benefit before requesting background access.</li>
+    <li>Design for platform-specific background-location behaviour, battery constraints and user-visible indicators.</li>
+    <li>Test screen lock, app switching, calls, low-power modes and force-quit behaviour.</li>
+    <li>Use supported camera/photo-library APIs and handle permission denial gracefully.</li>
+    <li>Test a range of iPhone generations, not only the latest hardware.</li>
+  </ul>
+  <h2>Android</h2>
+  <ul>
+    <li>Account for runtime location permissions, background-location restrictions and foreground-service requirements where applicable.</li>
+    <li>Handle manufacturer-specific battery optimisation that may pause background work.</li>
+    <li>Test varied device vendors, Android versions, memory capacities and screen sizes.</li>
+    <li>Use supported camera and document-picker flows.</li>
+    <li>Make the user-visible tracking state clear where the operating system requires it.</li>
+  </ul>
+  <div class="decided"><b class="tag">Decided (18A.9, 18A.10):</b> minimum iOS 16 and Android 9 (API 28), arm64, ≥ 3 GB RAM. Only “While using the app” location permission is requested on both platforms; background continuity comes from an Android foreground service of type <i>location</i> started while the app is visible, and iOS background location updates with the system indicator. “Always” permission is never requested.</div>
+  <h2>Shared-platform rule</h2>
+  <p>Cross-platform does not mean platform-identical internals. The user experience and map package should be consistent, but native location services, permissions and background execution must follow each operating system’s current rules. Those details need verification against current platform documentation during implementation.</p>
+
+  <h1>12. Performance, battery and reliability</h1>
+  <h2>Performance targets to validate</h2>
+  <p>The figures below are proposed targets for prototype testing, not verified performance guarantees.</p>
+  <table>
+    <thead><tr><th style="width:30%">Area</th><th>Initial target / measurement</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Map opening</td><td>A saved map should open promptly without rerunning full reconstruction; target a responsive first view within a few seconds on representative devices.</td></tr>
+      <tr><td class="k">Reconstruction</td><td>Measure time by source image size and complexity; offer progress and cancellation.</td></tr>
+      <tr><td class="k">Pan/zoom</td><td>Maintain a responsive map interaction under normal load; profile frame rate on mid-range devices.</td></tr>
+      <tr><td class="k">GPS update</td><td>Update at a configurable interval appropriate for trekking, balancing responsiveness and battery. <b>Decided default:</b> 5 m distance filter, max 10 s interval; battery saver 30 s.</td></tr>
+      <tr><td class="k">Recovery</td><td>A forced app restart should recover the saved map and last persisted track points. <b>Decided:</b> batch writes every 10 points or 30 s, so at most ~30 s of track is lost.</td></tr>
+      <tr><td class="k">Storage</td><td>Handle large maps with bounded memory use and clear low-storage behaviour.</td></tr>
+      <tr><td class="k">Battery</td><td>Measure energy use over a representative multi-hour outdoor session on iOS and Android.</td></tr>
+      <tr><td class="k">Thermals</td><td>Avoid running expensive reconstruction continuously during navigation; process before the trek where possible.</td></tr>
+    </tbody>
+  </table>
+  <h2>Practical engineering choices</h2>
+  <ul>
+    <li>Perform expensive reconstruction before the trek and persist its result.</li>
+    <li>Use incremental processing and checkpoints for large maps.</li>
+    <li>Downsample preview images while retaining original resolution for detail and fallback.</li>
+    <li>Render only visible layers and use caching for expensive textures.</li>
+    <li>Separate high-frequency GPS updates from full map reconstruction.</li>
+    <li>Make location update frequency configurable or adaptive where platform behaviour permits.</li>
+    <li>Do not keep the camera, CPU-intensive image pipeline or unnecessary sensors active during normal tracking.</li>
+  </ul>
+  <h2>Reliability and recovery</h2>
+  <ul>
+    <li>Persist the active trek state and track points regularly.</li>
+    <li>Handle temporary GPS loss without deleting the last known position or track.</li>
+    <li>Show stale-position age and resume updates when available.</li>
+    <li>Keep the original map intact even if reconstruction fails.</li>
+    <li>Validate map package integrity when opening it.</li>
+    <li>Test interruption scenarios: phone call, low battery, app backgrounding, OS termination, device restart and storage exhaustion.</li>
+  </ul>
+
+  <h1>13. Safety, privacy and security</h1>
+  <h2>Safety posture</h2>
+  <p>The app supports navigation but cannot guarantee a safe route or a correct position in every environment. A reconstructed map may contain omissions, and GPS can be inaccurate in mountains. The interface should not imply that the app has verified a trail merely because it detected a line in an image.</p>
+  <ul>
+    <li>Communicate calibration quality and GPS uncertainty.</li>
+    <li>Keep the source map accessible.</li>
+    <li>Flag unreviewed or low-confidence trail candidates.</li>
+    <li>Do not invent bridges, crossings, safe paths or terrain.</li>
+    <li>Do not present a straight-line connection as a safe route.</li>
+    <li>Encourage users to carry appropriate backup navigation and outdoor safety equipment; do not frame the app as a substitute.</li>
+  </ul>
+  <h2>Location permission and background tracking</h2>
+  <p>Background location is sensitive and consumes power. Request it only when the feature genuinely requires it, explain what it enables, and provide a clear way to stop tracking. The product should not require permanent tracking merely to import or view a map.</p>
+  <ul>
+    <li>Separate permission to use location while the app is open from any background-tracking permission.</li>
+    <li>Start recording only after the user explicitly starts a trek.</li>
+    <li>Show a persistent, understandable tracking state.</li>
+    <li>Stop collection when the trek ends, subject to clearly explained recovery behaviour.</li>
+    <li>Let users delete saved track history and maps.</li>
+    <li>Never collect or upload location history for analytics by default.</li>
+  </ul>
+  <h2>Privacy model</h2>
+  <ul>
+    <li>Local-first storage should be the default.</li>
+    <li>Do not upload maps, photos or GPS tracks without explicit consent.</li>
+    <li>Keep optional analytics free of precise location data unless a justified, disclosed opt-in is designed.</li>
+    <li>Document how backups, exports and OS-level device backups handle map and track data.</li>
+    <li>Use secure storage practices and appropriate file/database protections.</li>
+    <li>Provide a clear privacy policy before public release.</li>
+  </ul>
+  <h2>Security considerations</h2>
+  <ul>
+    <li>Validate imported file types and handle malformed or unusually large files safely.</li>
+    <li>Limit memory use and guard against crashes from crafted images.</li>
+    <li>Use platform-secure storage options for sensitive metadata where appropriate.</li>
+    <li>Do not expose local files through unintended sharing mechanisms.</li>
+    <li>Keep dependencies updated and review permissions before release.</li>
+    <li>Design exports to be user-initiated and clearly show what data is included.</li>
+  </ul>
+
+  <h1>14. Testing and validation strategy</h1>
+  <h2>Build a representative map test corpus</h2>
+  <p>Testing only a few clean topographic maps would create a misleading impression of quality. The corpus should cover a wide range of styles and conditions.</p>
+  <ul>
+    <li>High-resolution topographic maps with coordinate grids.</li>
+    <li>Maps with printed scale bars and north arrows.</li>
+    <li>Low-resolution screenshots and compressed images.</li>
+    <li>Photographs with perspective distortion, glare, shadows and folded paper.</li>
+    <li>Illustrated/cartoon maps with non-standard symbols and stylised trails.</li>
+    <li>Hand-drawn maps that may not be to scale.</li>
+    <li>Maps with dense labels, overlapping symbols and multilingual text.</li>
+    <li>Maps with no coordinate references.</li>
+    <li>Maps containing visually similar rivers, roads, trails and contour lines.</li>
+    <li>Maps whose geography is distorted for presentation.</li>
+  </ul>
+  <div class="decided"><b class="tag">Decided (18A.3):</b> the initial acceptance corpus is ~60 maps in 6 categories of ~10 each: gridded topographic; scale-bar/north-arrow trail maps; guidebook PDF pages; phone photos with glare/folds; illustrated/cartoon maps; hand-drawn sketch maps. Each is annotated with ground-truth trails, labels and, where possible, control points.</div>
+  <h2>Functional test matrix</h2>
+  <table>
+    <thead><tr><th style="width:30%">Test category</th><th>Examples</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Capture/import</td><td>Blurry input, rotate/crop, huge file, denied camera permission, interrupted import.</td></tr>
+      <tr><td class="k">Reconstruction</td><td>Feature precision/recall, text accuracy, style similarity, user correction persistence.</td></tr>
+      <tr><td class="k">Calibration</td><td>Known points, different map rotations/scales, perspective correction, low-confidence alignment.</td></tr>
+      <tr><td class="k">GPS</td><td>Open sky, forest, valley, temporary signal loss, noisy location samples, heading errors.</td></tr>
+      <tr><td class="k">Offline</td><td>Airplane mode after map creation; no network at startup; long trek with no coverage.</td></tr>
+      <tr><td class="k">Background</td><td>Screen lock, app switching, OS process termination, low-power mode, permission changes.</td></tr>
+      <tr><td class="k">Recovery</td><td>Crash during reconstruction, crash during trek, storage exhaustion, device restart.</td></tr>
+      <tr><td class="k">Cross-platform</td><td>Same map package and expected behaviour on supported iOS and Android devices.</td></tr>
+      <tr><td class="k">Usability</td><td>First-time user can create, calibrate and start a trek without specialist knowledge.</td></tr>
+      <tr><td class="k">Safety</td><td>Low confidence is visible; no unverified route is presented as confirmed.</td></tr>
+    </tbody>
+  </table>
+  <h2>Evaluation metrics for reconstruction</h2>
+  <ul>
+    <li><b>Visual fidelity:</b> human rating of whether the result preserves source appearance, plus image-based similarity metrics where meaningful.</li>
+    <li><b>Feature detection precision/recall:</b> measure correct and missed trails, rivers, landmarks and labels against annotated test maps.</li>
+    <li><b>Geometry error:</b> compare extracted paths and points to annotated reference geometry.</li>
+    <li><b>Calibration error:</b> measure location alignment error against known reference points, separately from GPS error.</li>
+    <li><b>Task completion:</b> percentage of users who can create a usable map and start tracking.</li>
+    <li><b>Correction effort:</b> time and number of edits required before a map is trusted by the user.</li>
+  </ul>
+  <h2>Evaluation caution</h2>
+  <p>A map can look visually convincing while being spatially wrong. Visual fidelity and navigation correctness must be measured independently. The app should never use a high style-similarity score as evidence that its coordinates are accurate.</p>
+
+  <h1>15. MVP definition and roadmap</h1>
+  <h2>Phase 0 — Feasibility prototype</h2>
+  <ul>
+    <li>Select a small, diverse set of map images including topographic and illustrated styles.</li>
+    <li>Prototype image correction, source-preserving layers and a basic vector overlay.</li>
+    <li>Test map calibration with known reference points and measure alignment error.</li>
+    <li>Test GPS-to-map rendering on both iOS and Android.</li>
+    <li>Benchmark processing time, memory use and battery impact.</li>
+    <li>Make a go/no-go decision based on measured reconstruction quality rather than assumptions.</li>
+    <li><b>Validate the provisional stack (18A.1)</b> against its kill criteria: 3-hour background track without unexplained gaps on a mid-range Android device; smooth pan/zoom of an 8000 px tiled map; reconstruction of a 24 MP photo in under 60 s on the low-tier test device.</li>
+  </ul>
+  <h2>Phase 1 — MVP: dependable 2D offline navigation</h2>
+  <table>
+    <thead><tr><th style="width:30%">Include</th><th>Details</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Map capture/import</td><td>Capture a map or import JPEG, PNG, HEIC, WebP or a single PDF page; crop, rotate and preserve original.</td></tr>
+      <tr><td class="k">Basic reconstruction</td><td>Rectified source raster as base layer + OCR labels + trail/water candidates as vector features, rendered in the source style.</td></tr>
+      <tr><td class="k">Manual correction</td><td>Assisted review (confirm/reject, tap-to-trace) of trails, water, crossings and landmarks; manual drawing as fallback.</td></tr>
+      <tr><td class="k">Calibration</td><td>Grid/coordinate entry, scale + north + anchor, and “I’m here” GPS control points; Good / Approximate / Insufficient status with measured thresholds.</td></tr>
+      <tr><td class="k">Offline map package</td><td>Save map, reconstruction and calibration locally in the versioned package format.</td></tr>
+      <tr><td class="k">GPS tracking</td><td>Live location, breadcrumb track, pause/resume/finish and basic trek summary.</td></tr>
+      <tr><td class="k">Original fallback</td><td>Source image with calibrated position and track overlay.</td></tr>
+      <tr><td class="k">GPX export <span class="new">NEW</span></td><td>User-initiated export of trek tracks as GPX through the OS share sheet.</td></tr>
+      <tr><td class="k">Privacy controls</td><td>Explicit start/stop tracking, permission explanations and delete controls.</td></tr>
+      <tr><td class="k">Cross-platform</td><td>Supported iOS 16+ and Android 9+ builds with platform-specific tracking handling.</td></tr>
+    </tbody>
+  </table>
+  <h2>Phase 1 non-goals</h2>
+  <ul>
+    <li>Perfectly reconstruct every possible map style automatically.</li>
+    <li>Guarantee navigation accuracy on maps without enough geographic information.</li>
+    <li>Automatic safe-route planning or turn-by-turn directions.</li>
+    <li>Cloud-based map sharing, social features or account systems unless later justified.</li>
+    <li>3D terrain reconstruction.</li>
+    <li>Continuous tracking when no trek is active.</li>
+    <li>Fully stylised vector redraw of the whole map; full map-package export; GeoPDF/GeoTIFF import.</li>
+  </ul>
+  <h2>Phase 2 — Reconstruction quality and usability</h2>
+  <ul>
+    <li>Improve symbol, label and geometry extraction across more map styles.</li>
+    <li>Fully stylised redraw of extracted features using the source style palette.</li>
+    <li>Improve user correction tools and uncertainty presentation.</li>
+    <li>Support additional import types (GeoPDF, GeoTIFF with automatic calibration) and better large-map handling.</li>
+    <li>Add export/backup options with clear privacy controls, including <span class="formula">.trekmap</span> map-package export.</li>
+    <li>Higher-order / piecewise calibration for hand-drawn maps with many control points.</li>
+    <li>Improve map package portability and reconstruction versioning.</li>
+    <li>Expand device and environmental testing.</li>
+  </ul>
+  <h2>Phase 3 — Advanced navigation</h2>
+  <ul>
+    <li>Explore optional route graphs and route assistance only where the extracted geometry is sufficiently reliable.</li>
+    <li>Add richer elevation/profile information where a trustworthy source exists.</li>
+    <li>Consider group/guide workflows and user-initiated map sharing (requires a copyright/sharing policy first).</li>
+    <li>Add offline reference-data integrations only if licensing and product needs justify them.</li>
+  </ul>
+  <h2>Phase 4 — Optional 3D</h2>
+  <ul>
+    <li>Add a 3D visualisation mode after the 2D engine is reliable.</li>
+    <li>Distinguish illustrated map art from actual terrain geometry.</li>
+    <li>Use known elevation data or a clearly labelled approximation; do not infer exact terrain from contour art without validation.</li>
+    <li>Keep 3D optional and ensure the 2D view remains available for clarity, speed and battery life.</li>
+    <li><b>Decided direction (18A.13):</b> drape the user’s map over open DEM data (e.g. Copernicus GLO-30), downloaded before the trek, only for maps with Good calibration.</li>
+  </ul>
+  <h2>Release gates</h2>
+  <ol>
+    <li>Users can create and reopen a map without losing the source image.</li>
+    <li>Visual reconstruction preserves the source style sufficiently for the supported initial map corpus.</li>
+    <li>Calibration status is understandable and measured.</li>
+    <li>GPS position and track overlay correctly on both reconstructed and source-image views within the tested conditions.</li>
+    <li>Core navigation works without mobile data.</li>
+    <li>Tracking survives normal backgrounding and recoverable interruptions within platform constraints.</li>
+    <li>Privacy, battery, crash recovery and safety behaviours pass defined acceptance tests.</li>
+  </ol>
+
+  <h1>16. Risks and mitigations</h1>
+  <table>
+    <thead><tr><th style="width:30%">Risk</th><th>Impact</th><th>Mitigation</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Arbitrary maps are too diverse for perfect automatic reconstruction</td><td>Core value becomes inconsistent.</td><td>Start with a representative corpus, use hybrid rendering, show confidence and support corrections.</td></tr>
+      <tr><td class="k">Map has no geographic references</td><td>GPS cannot be reliably aligned across the full map.</td><td>Offer calibration options including “I’m here” points; explain limitations; allow image-space fallback without overstating accuracy.</td></tr>
+      <tr><td class="k">A detected decorative line is mistaken for a trail</td><td>Potentially unsafe interpretation.</td><td>Use confidence/review states; do not infer safe routes from visual resemblance alone.</td></tr>
+      <tr><td class="k">Visual reconstruction changes important details</td><td>Loss of trust and navigation errors.</td><td>Preserve source assets, compare against source, use traceable feature provenance and fallback.</td></tr>
+      <tr><td class="k">Background location is stopped by OS or device settings</td><td>Track gaps.</td><td>Follow platform rules, communicate tracking status, test device variations and recover gracefully.</td></tr>
+      <tr><td class="k">Battery drain on long treks</td><td>App becomes unusable during trip.</td><td>Precompute reconstruction, tune GPS cadence, profile power and avoid unnecessary sensors.</td></tr>
+      <tr><td class="k">Large image overwhelms memory</td><td>Crash or failed map creation.</td><td>Tiled/downsampled processing, bounded memory, checkpoints and graceful failure.</td></tr>
+      <tr><td class="k">Users interpret the dot as exact</td><td>False confidence.</td><td>Show accuracy/age, calibration quality and clear warnings.</td></tr>
+      <tr><td class="k">Cross-platform behaviour diverges</td><td>Inconsistent reliability.</td><td>Shared data specification, platform adapters and a common conformance test suite.</td></tr>
+      <tr><td class="k">3D work delays the core product</td><td>MVP slips.</td><td>Keep 3D explicitly out of MVP and prioritise dependable 2D navigation.</td></tr>
+      <tr><td class="k">Map licensing/copyright uncertainty</td><td>Legal or distribution risk.</td><td>Personal use only in MVP, no sharing between users; import notice on lawful use; sharing policy required before Phase 3.</td></tr>
+      <tr><td class="k">Provisional stack fails Phase 0 <span class="new">NEW</span></td><td>Rework of UI layer.</td><td>Explicit kill criteria in Phase 0; C++ core and native location adapters are reusable under a fully native UI.</td></tr>
+    </tbody>
+  </table>
+  <h2>Risk prioritisation</h2>
+  <p>The highest-priority risks are map georeferencing, false confidence in extracted features, background tracking reliability and reconstruction fidelity. These should be tested early, before investing heavily in polished UI or 3D.</p>
+
+  <h1>17. Success metrics</h1>
+  <h2>North-star outcome</h2>
+  <p>A user can create a usable map from their own source, understand its calibration quality, and complete an offline trek while retaining access to the original map.</p>
+  <h2>Proposed metrics</h2>
+  <table>
+    <thead><tr><th style="width:40%">Metric</th><th>What it tells us</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Map creation completion rate</td><td>Whether capture/import and reconstruction are understandable.</td></tr>
+      <tr><td class="k">Time to first usable map</td><td>How quickly a user reaches a map they can review and save. Target: &lt; 10 minutes for a first-time user.</td></tr>
+      <tr><td class="k">Calibration completion rate</td><td>Whether users can align maps without expert knowledge.</td></tr>
+      <tr><td class="k">Calibration error on reference corpus</td><td>Whether geographic alignment is actually accurate. Target: ≤ 25 m RMSE for “Good”.</td></tr>
+      <tr><td class="k">Feature correction rate</td><td>How often automatic extraction needs user intervention.</td></tr>
+      <tr><td class="k">Visual fidelity rating</td><td>Whether the reconstructed map still feels like the original.</td></tr>
+      <tr><td class="k">Offline session success rate</td><td>Whether core use works with connectivity disabled.</td></tr>
+      <tr><td class="k">Track continuity</td><td>Frequency and duration of unexplained track gaps under tested conditions.</td></tr>
+      <tr><td class="k">Crash-free trek sessions</td><td>Reliability during the most important workflow.</td></tr>
+      <tr><td class="k">Battery use per hour</td><td>Practical viability for long outdoor use.</td></tr>
+      <tr><td class="k">Fallback usage and resolution</td><td>Whether the source image helps users recover from reconstruction limitations.</td></tr>
+      <tr><td class="k">User trust rating</td><td>Whether uncertainty and location quality are communicated clearly.</td></tr>
+    </tbody>
+  </table>
+  <p>Metrics should be segmented by map type, image quality, device tier, calibration method and environment. A single overall average can hide severe failures on a particular class of maps.</p>
+
+  <h1>18. Open questions and decisions</h1>
+  <p>In version 1 these were open. Version 2 records a decision for each; the full reasoning and revisit conditions are in section 18A.</p>
+  <table>
+    <thead><tr><th style="width:30%">Question</th><th>Why it matters</th><th>Decision (v2)</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Which technology stack?</td><td>Determines rendering consistency, background reliability and team effort.</td><td>Flutter + shared C++/OpenCV core + native location adapters; provisional until Phase 0. (18A.1)</td></tr>
+      <tr><td class="k">Which map formats are in the first release?</td><td>Camera photos are different from scans, screenshots and PDF pages.</td><td>JPEG, PNG, HEIC, WebP, single PDF page; size limits defined. (18A.2)</td></tr>
+      <tr><td class="k">How much automatic reconstruction is required for MVP?</td><td>Perfect arbitrary-map support is not a realistic initial acceptance criterion.</td><td>Hybrid: source raster base + OCR labels + trail/water vectors; measured bar on a 60-map corpus. (18A.3)</td></tr>
+      <tr><td class="k">What counts as sufficient calibration?</td><td>Determines when the app can confidently show a GPS dot on the map.</td><td>Good ≥ 4 spread points and RMSE ≤ 25 m; Approximate; Insufficient. (18A.4)</td></tr>
+      <tr><td class="k">Should the app support maps with no scale or coordinates?</td><td>Such maps may only support approximate image-space positioning.</td><td>Yes, via Sketch mode with progressive “I’m here” control points. (18A.5)</td></tr>
+      <tr><td class="k">Should feature corrections be manual, assisted or both?</td><td>Affects complexity and usability.</td><td>Both: assisted first (tap-to-trace), manual fallback. (18A.6)</td></tr>
+      <tr><td class="k">Should maps be exportable to other devices?</td><td>Raises package compatibility, privacy and sharing questions.</td><td>GPX track export in MVP; .trekmap package export in Phase 2. (18A.7)</td></tr>
+      <tr><td class="k">Is any cloud processing allowed?</td><td>Changes privacy, cost, connectivity and architecture.</td><td>No, in MVP or Phase 2. (18A.8)</td></tr>
+      <tr><td class="k">What are the minimum supported phone specifications?</td><td>Sets performance and support boundaries.</td><td>iOS 16+, Android 9+, arm64, ≥ 3 GB RAM. (18A.9)</td></tr>
+      <tr><td class="k">Which location permission level?</td><td>Affects privacy, store review and user trust.</td><td>“While using the app” only; never “Always”. (18A.10)</td></tr>
+      <tr><td class="k">GPS sampling and persistence?</td><td>Balances track detail, battery and crash loss.</td><td>5 m / 10 s; 30 s saver; batch writes. (18A.11)</td></tr>
+      <tr><td class="k">Should the app show heading-up, north-up or both?</td><td>Affects outdoor usability and compass reliance.</td><td>Both; north-up default, heading-up when compass is reliable. (18A.12)</td></tr>
+      <tr><td class="k">What 3D experience is desired later?</td><td>Illustrated 3D and realistic terrain are different products.</td><td>Realistic terrain from open DEM, Good-calibrated maps only. (18A.13)</td></tr>
+      <tr><td class="k">What is the intended business model?</td><td>Affects distribution, support and future sync features.</td><td>Free tier + one-time Pro unlock; no subscription. (18A.14)</td></tr>
+      <tr><td class="k">How is map copyright handled?</td><td>Legal and distribution risk.</td><td>Personal use only in MVP; lawful-use notice on import. (18A.15)</td></tr>
+    </tbody>
+  </table>
+  <h2>Recommended immediate planning activity</h2>
+  <p>Assemble the ~60-map acceptance-test corpus described in section 14 and build the Phase 0 proof of concept for the riskiest elements: style-preserving reconstruction, geographic calibration (including “I’m here” control points), stable GPS overlay and background tracking — using the provisional stack and judging it against its kill criteria.</p>
+
+  <!-- ================= 18A ================= -->
+  <h1 class="page-break">18A. Decision record</h1>
+  <p>Each decision states what was chosen, why, and what evidence would cause it to be revisited. Decisions marked provisional must be confirmed by Phase 0 results.</p>
+
+  <div class="dec"><div class="hd">18A.1 Technology stack (provisional)</div><div class="bd">
+    <div class="row"><span class="lbl">Decision:</span> Flutter for UI and rendering; a shared C++ core using OpenCV, called through dart:ffi, for image processing, reconstruction and spatial maths; native location adapters (Kotlin on Android, Swift on iOS) behind platform channels; Google ML Kit on-device text recognition for OCR; SQLite for app data. Map rendering is a custom tiled canvas, not MapLibre/Mapbox.</div>
+    <div class="row"><span class="lbl">Rationale:</span> Style preservation is the product. Flutter draws every pixel with its own engine, so a map renders identically on both platforms, whereas frameworks that wrap native widgets introduce small differences. Writing the heaviest code once in C++ guarantees identical reconstruction and transform behaviour on both platforms, as section 8.2 requires. Background location is where cross-platform plugins are least reliable, so it is written natively. Standard web-map engines assume geographic tiles in a fixed projection with their own styling; these maps live in image space with their own style, so a custom tiled canvas is simpler and more faithful.</div>
+    <div class="row"><span class="lbl">Revisit if:</span> in Phase 0 Flutter cannot record a 3-hour background track without unexplained gaps on a mid-range Android device, or cannot pan/zoom an 8000 px tiled map smoothly. The C++ core and native adapters remain reusable under a fully native UI.</div>
+  </div></div>
+
+  <div class="dec"><div class="hd">18A.2 Input formats for the first release</div><div class="bd">
+    <div class="row"><span class="lbl">Decision:</span> JPEG, PNG, HEIC and WebP from camera or photo library, plus a single page from a PDF, rasterised on import. Input limit 100 MB / 60 MP; working image capped at 8000 px on the long edge; original always retained at full resolution. GeoPDF and GeoTIFF move to Phase 2.</div>
+    <div class="row"><span class="lbl">Rationale:</span> guidebook and park maps are very commonly distributed as PDFs, so excluding them would block a core use case. Size caps bound memory on lower-tier devices. GeoPDF/GeoTIFF would provide automatic calibration but serve a specialist audience.</div>
+    <div class="row"><span class="lbl">Revisit if:</span> user testing shows a significant share of users bringing georeferenced files, or multi-page PDFs where page selection is not enough.</div>
+  </div></div>
+
+  <div class="dec"><div class="hd">18A.3 MVP reconstruction scope and quality bar</div><div class="bd">
+    <div class="row"><span class="lbl">Decision:</span> MVP reconstruction is a hybrid: the rectified, cleaned source raster as the base layer; OCR-detected labels; and trail/water candidates from colour segmentation and line tracing, stored as vector features and rendered in the source’s colours and line styles. Full stylised redraw is Phase 2. Acceptance bar on the ~60-map corpus: trail-segment recall ≥ 70% and label read accuracy ≥ 80% on clean topographic maps; a first-time user reaches a reviewed, usable map in under 10 minutes.</div>
+    <div class="row"><span class="lbl">Rationale:</span> fully automatic redrawing of arbitrary maps is the riskiest part of the plan. Using the source pixels as the base layer means the MVP can never look less like the original than the paper map itself, while the vector layer still provides structure, interactivity and review — this is the hybrid approach of section 6.4 with the riskiest step deferred.</div>
+    <div class="row"><span class="lbl">Revisit if:</span> Phase 0 shows the vector extraction is already strong enough to redraw reliably, or conversely falls well below the bar on topographic maps.</div>
+  </div></div>
+
+  <div class="dec"><div class="hd">18A.4 What counts as sufficient calibration</div><div class="bd">
+    <div class="row"><span class="lbl">Decision:</span> transforms are fitted in a local east/north tangent plane in metres centred on the map, never directly in latitude/longitude. 2 control points → similarity transform; 3+ → least-squares affine. Error is the leave-one-out RMSE. <b>Good</b>: ≥ 4 points, convex hull ≥ 50% of the map, RMSE ≤ 25 m. <b>Approximate</b>: 2–3 points, scale + north + anchor, or RMSE 25–100 m. <b>Insufficient</b>: fewer than 2 points or RMSE &gt; 100 m. Displayed uncertainty = √(GPS accuracy² + calibration RMSE²).</div>
+    <div class="row"><span class="lbl">Rationale:</span> an affine fit through exactly 3 points is always perfect and so reveals nothing about error; a fourth point makes accuracy measurable. 25 m is roughly typical consumer-GPS accuracy under tree cover, so below it the map is no longer the weakest link. Fitting in latitude/longitude would distort scale away from the equator.</div>
+    <div class="row"><span class="lbl">Revisit if:</span> field tests show users routinely misjudge position at these thresholds, or the corpus shows well-made maps systematically exceeding 25 m because of projection effects that need a higher-order model.</div>
+  </div></div>
+
+  <div class="dec"><div class="hd">18A.5 Maps with no scale or coordinates</div><div class="bd">
+    <div class="row"><span class="lbl">Decision:</span> supported through a clearly labelled <b>Sketch mode</b> built on progressive “I’m here” control points: whenever the user reaches a recognisable feature they tap it on the map and the current GPS fix is recorded. 1 point: no position shown (“walk to a landmark you can identify”). 2 points: similarity transform, Approximate. 3+ points: affine, Approximate or Good by the 18A.4 rules.</div>
+    <div class="row"><span class="lbl">Rationale:</span> it needs no internet and no GIS knowledge, it improves as the user walks, and it never claims more accuracy than it has. It is also the most broadly useful calibration method for every map type, so it is a primary feature rather than a fallback.</div>
+    <div class="row"><span class="lbl">Revisit if:</span> users frequently tap the wrong feature (visible as large residuals), which would call for outlier rejection or confirmation prompts.</div>
+  </div></div>
+
+  <div class="dec"><div class="hd">18A.6 Correction workflow</div><div class="bd">
+    <div class="row"><span class="lbl">Decision:</span> both assisted and manual. Assisted: confirm/reject candidates and tap-to-trace, where a tap on a line snaps to and follows connected pixels of the same colour. Manual drawing is the fallback. Mandatory review is limited to high-impact classes: trails, water, crossings and landmarks.</div>
+    <div class="row"><span class="lbl">Rationale:</span> tap-to-trace is what turns correction from an hour of drawing into minutes. Limiting review to safety-relevant features keeps effort low without hiding uncertainty where it matters.</div>
+    <div class="row"><span class="lbl">Revisit if:</span> usability tests show correction effort above the 10-minute target.</div>
+  </div></div>
+
+  <div class="dec"><div class="hd">18A.7 Export and map-package portability</div><div class="bd">
+    <div class="row"><span class="lbl">Decision:</span> MVP: user-initiated GPX export of tracks through the OS share sheet. Phase 2: whole-map export as a single <span class="formula">.trekmap</span> zip. From day one, the map package is a folder with a versioned <span class="formula">manifest.json</span>, designed to be zipped.</div>
+    <div class="row"><span class="lbl">Rationale:</span> GPX is cheap, interoperable with every outdoor app, and expected by users. Exporting whole maps commits to format stability, so it waits until the format settles, as version 1 suggested.</div>
+    <div class="row"><span class="lbl">Revisit if:</span> guide/group-leader users need to hand prepared maps to others before Phase 2.</div>
+  </div></div>
+
+  <div class="dec"><div class="hd">18A.8 Cloud processing</div><div class="bd">
+    <div class="row"><span class="lbl">Decision:</span> none in MVP or Phase 2.</div>
+    <div class="row"><span class="lbl">Rationale:</span> preserves the privacy and offline promises; no server to operate or pay for; no account system required.</div>
+    <div class="row"><span class="lbl">Revisit if:</span> on-device reconstruction misses performance or quality targets on mid-tier devices. Even then any cloud path is opt-in and never required to navigate.</div>
+  </div></div>
+
+  <div class="dec"><div class="hd">18A.9 Minimum supported devices</div><div class="bd">
+    <div class="row"><span class="lbl">Decision:</span> iOS 16+; Android 9 (API 28)+, arm64, ≥ 3 GB RAM. Benchmark matrix: iPhone SE (2nd gen), iPhone 13, current iPhone; budget Samsung Galaxy A-series, Pixel 7a, current Android flagship.</div>
+    <div class="row"><span class="lbl">Rationale:</span> covers the large majority of phones in active use while excluding devices that cannot reliably process an 8000 px working image.</div>
+    <div class="row"><span class="lbl">Revisit if:</span> Phase 0 memory profiling shows 3 GB devices failing, or target markets skew to older devices.</div>
+  </div></div>
+
+  <div class="dec"><div class="hd">18A.10 Location permission level</div><div class="bd">
+    <div class="row"><span class="lbl">Decision:</span> request only “While using the app” on both platforms; never request “Always”. Continuity with the screen locked comes from an Android foreground service of type <i>location</i> started while the app is visible (with its persistent notification), and iOS background location updates with the system location indicator.</div>
+    <div class="row"><span class="lbl">Rationale:</span> both platforms allow tracking that was started in the foreground to continue in the background under this arrangement. It avoids the most alarming permission prompt, eases app-store review and matches the privacy model in section 13.</div>
+    <div class="row"><span class="lbl">Revisit if:</span> current platform rules change, or Phase 0 testing finds track gaps that only “Always” permission resolves. Details must be verified against current platform documentation during implementation.</div>
+  </div></div>
+
+  <div class="dec"><div class="hd">18A.11 GPS sampling and track persistence</div><div class="bd">
+    <div class="row"><span class="lbl">Decision:</span> default 5 m distance filter with a maximum 10 s interval; battery-saver mode 30 s. Fixes with reported accuracy worse than 50 m are kept but flagged and excluded from distance. Track points are written to SQLite (WAL mode) in batches of 10 points or every 30 s. Tracks are never snapped to trails.</div>
+    <div class="row"><span class="lbl">Rationale:</span> at walking speed this captures switchbacks without excessive battery drain; batching limits crash loss to roughly 30 seconds of track.</div>
+    <div class="row"><span class="lbl">Revisit if:</span> battery measurements over multi-hour sessions exceed acceptable drain, or distance measurements are noticeably inflated by noise.</div>
+  </div></div>
+
+  <div class="dec"><div class="hd">18A.12 Map orientation</div><div class="bd">
+    <div class="row"><span class="lbl">Decision:</span> north-up by default (for sketch maps, “as drawn”); heading-up available as a toggle only when the compass reports good accuracy. The position marker shows a heading cone only when heading is reliable.</div>
+    <div class="row"><span class="lbl">Rationale:</span> phone compasses are unreliable when stationary or near metal, and north-up keeps the map looking like the paper the user trusts.</div>
+    <div class="row"><span class="lbl">Revisit if:</span> the field usability study shows a strong preference for heading-up.</div>
+  </div></div>
+
+  <div class="dec"><div class="hd">18A.13 Future 3D direction</div><div class="bd">
+    <div class="row"><span class="lbl">Decision:</span> realistic terrain, not illustrated 3D: the user’s map draped over open elevation data (e.g. Copernicus GLO-30), downloaded before the trek, available only for maps with Good calibration.</div>
+    <div class="row"><span class="lbl">Rationale:</span> extruding illustrated art into 3D would mean inventing terrain, which violates the product’s core rule. Real elevation data is free and honest.</div>
+    <div class="row"><span class="lbl">Revisit if:</span> user research shows strong demand for stylised 3D of illustrated maps, which would need to be presented clearly as decorative.</div>
+  </div></div>
+
+  <div class="dec"><div class="hd">18A.14 Business model</div><div class="bd">
+    <div class="row"><span class="lbl">Decision:</span> free download with up to 2 saved maps and all safety features; one-time “Pro” purchase unlocks unlimited maps, GPX export and Sketch mode with unlimited control points. No subscription unless cloud features are introduced later.</div>
+    <div class="row"><span class="lbl">Rationale:</span> with no server costs a subscription is hard to justify, and outdoor users resist subscriptions. Safety-relevant features are never behind the paywall.</div>
+    <div class="row"><span class="lbl">Revisit if:</span> ongoing costs appear (cloud sync, reference data licensing) or conversion data argues for a different split.</div>
+  </div></div>
+
+  <div class="dec"><div class="hd">18A.15 Map copyright</div><div class="bd">
+    <div class="row"><span class="lbl">Decision:</span> MVP is personal use only, with no sharing between users. Import screens carry a short notice that the user is responsible for having the right to use the map.</div>
+    <div class="row"><span class="lbl">Rationale:</span> without redistribution there is minimal copyright exposure; a sharing policy is a prerequisite for Phase 3 sharing features.</div>
+    <div class="row"><span class="lbl">Revisit if:</span> sharing features are scheduled, or legal review advises otherwise.</div>
+  </div></div>
+
+  <h1>19. Glossary</h1>
+  <table>
+    <thead><tr><th style="width:30%">Term</th><th>Plain-language definition</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Georeferencing</td><td>Connecting positions on an image or map to real-world geographic coordinates.</td></tr>
+      <tr><td class="k">Calibration</td><td>The process of establishing how map positions correspond to known locations.</td></tr>
+      <tr><td class="k">Control point</td><td>A spot on the map whose real-world coordinates are known; several of them define the calibration.</td></tr>
+      <tr><td class="k">“I’m here” point</td><td>A control point created by tapping a recognisable map feature while standing at it, using the current GPS fix.</td></tr>
+      <tr><td class="k">Sketch mode</td><td>The labelled mode for maps without scale or coordinates, calibrated progressively with “I’m here” points.</td></tr>
+      <tr><td class="k">Coordinate transform</td><td>A mathematical mapping between pixel coordinates, map coordinates and geographic coordinates.</td></tr>
+      <tr><td class="k">Affine / similarity transform</td><td>Transform models: similarity allows scale, rotation and shift; affine also allows stretch and skew.</td></tr>
+      <tr><td class="k">RMSE (leave-one-out)</td><td>Typical calibration error, measured by fitting without each control point in turn and checking how far off it lands.</td></tr>
+      <tr><td class="k">OCR</td><td>Optical character recognition: software that reads text in images.</td></tr>
+      <tr><td class="k">Computer vision</td><td>Techniques for extracting useful information from images.</td></tr>
+      <tr><td class="k">Vector geometry</td><td>Points, lines and shapes represented mathematically rather than as fixed pixels.</td></tr>
+      <tr><td class="k">Raster image</td><td>An image made from pixels, such as a photograph or scan.</td></tr>
+      <tr><td class="k">Semantic feature</td><td>An object with a meaning, such as a trail, river, label, campsite or contour line.</td></tr>
+      <tr><td class="k">Breadcrumb track</td><td>A sequence of recorded GPS positions showing where the user has travelled.</td></tr>
+      <tr><td class="k">GPX</td><td>A standard file format for GPS tracks, readable by almost all outdoor and mapping apps.</td></tr>
+      <tr><td class="k">Foreground service</td><td>An Android mechanism that lets visible, user-started work (such as trek tracking) keep running with a persistent notification.</td></tr>
+      <tr><td class="k">DEM</td><td>Digital elevation model: a grid of real terrain heights.</td></tr>
+      <tr><td class="k">Confidence score</td><td>An estimate of how likely a detection or interpretation is to be correct; not a guarantee.</td></tr>
+      <tr><td class="k">Offline-first</td><td>A system designed to function without a network connection for its essential tasks.</td></tr>
+      <tr><td class="k">Hybrid rendering</td><td>Combining original image texture with vector objects and digital overlays.</td></tr>
+    </tbody>
+  </table>
+
+  <h1>Closing summary</h1>
+  <p>The app’s differentiator is the combination of three capabilities: preserve the source map’s visual identity, create a structured digital representation, and align live GPS movement to it while offline. The most credible route to this product is to prove those capabilities in 2D first, retain the original map as a failsafe, and make uncertainty explicit whenever the source map or GPS does not support reliable alignment.</p>
+  <div class="callout orange">Guiding rule: the reconstructed map should look like the map the user brought, but the app must never confuse visual resemblance with geographic accuracy.</div>
+</section>
+</body>
+</html>

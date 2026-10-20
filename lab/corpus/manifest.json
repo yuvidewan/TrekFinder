@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "maps": [
+    {
+      "id": "usgs_half_dome_1997",
+      "file": "images/usgs_half_dome_1997.tif",
+      "category": "gridded_topo",
+      "source": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Maps/HistoricalTopo/GeoTIFF/CA/CA_Half%20Dome_100673_1997_24000_geo.tif",
+      "license": "public domain (USGS)",
+      "notes": "1:24,000 Yosemite. Embedded GeoTIFF georeferencing provides exact ground truth for any pixel.",
+      "control_points": []
+    },
+    {
+      "id": "usgs_mt_rainier_west_1971",
+      "file": "images/usgs_mt_rainier_west_1971.tif",
+      "category": "gridded_topo",
+      "source": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Maps/HistoricalTopo/GeoTIFF/WA/WA_Mt%20Rainier%20West_242657_1971_24000_geo.tif",
+      "license": "public domain (USGS)",
+      "notes": "1:24,000 Mt Rainier. Embedded GeoTIFF georeferencing provides exact ground truth for any pixel.",
+      "control_points": []
+    },
+    {
+      "id": "nps_mora_paradise_trails",
+      "file": "images/nps_mora_paradise_trails.pdf",
+      "page": 2,
+      "category": "scale_bar_trail_map",
+      "source": "https://www.nps.gov/mora/planyourvisit/upload/2019-Paradise-Area-Trails_508.pdf",
+      "license": "public domain (US National Park Service)",
+      "notes": "Schematic trail map with scale bar, compass rose and named landmarks; may not be strictly to scale. Also exercises PDF page import.",
+      "control_points": []
+    },
+    {
+      "id": "nps_mora_sunrise_trails",
+      "file": "images/nps_mora_sunrise_trails.pdf",
+      "page": 2,
+      "category": "scale_bar_trail_map",
+      "source": "https://www.nps.gov/mora/planyourvisit/upload/2020-Sunrise-Area-Trails_access.pdf",
+      "license": "public domain (US National Park Service)",
+      "notes": "Schematic trail map with scale bar and named landmarks; may not be strictly to scale. Also exercises PDF page import.",
+      "control_points": []
+    }
+  ]
+}
