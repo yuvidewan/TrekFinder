@@ -1,0 +1,92 @@
+[
+ {
+  "id": "loc_rocky_mtn_hysterical_map",
+  "category": "illustrated",
+  "title": "File:A hysterical map of Rocky Mountain National Park scenery - chockfull of ohs & ahs LOC 2008625104.jpg",
+  "notes": "Cartoon pictorial map, dense jokes and drawings"
+ },
+ {
+  "id": "wellge_yellowstone_1904_birdseye",
+  "category": "illustrated",
+  "title": "File:Yellowstone National Park by Wellge, 1904.jpg",
+  "notes": "Bird's-eye perspective view: not planimetric at all"
+ },
+ {
+  "id": "treasure_island_map",
+  "category": "fantasy",
+  "title": "File:Treasure Island map.jpg",
+  "notes": "Fictional treasure map; no real geography"
+ },
+ {
+  "id": "photo_ski_slopes_sign_huez",
+  "category": "photo",
+  "title": "File:Sign with ski slopes map, Télémix Marmottes 1, Huez, 2026.jpg",
+  "notes": "Phone-style photo of an outdoor ski map sign"
+ },
+ {
+  "id": "orienteering_sprint_tartu",
+  "category": "orienteering",
+  "title": "File:Sprint orienteering map Ropka Tartu Estonia cartography map.jpg",
+  "notes": "ISSprOM orienteering symbology"
+ },
+ {
+  "id": "orienteering_hand_drawn",
+  "category": "orienteering",
+  "title": "File:Drawed orienteering map 1.png",
+  "notes": "Printed orienteering course sheet (Polish text), simple linework"
+ },
+ {
+  "id": "sketch_younghusband_tibet",
+  "category": "hand_drawn",
+  "title": "File:Sketch map of Younghusband expedition to Tibet with date.jpg",
+  "notes": "Historic Himalayan route sketch map"
+ },
+ {
+  "id": "sketch_shackleton_elephant_island",
+  "category": "hand_drawn",
+  "title": "File:South - the story of Shackleton's last expedition, 1914-1917 - Rough Sketch Map of Landing Place and First Camp at C. Valentine, Elephant Island.jpg",
+  "notes": "Rough sketch map"
+ },
+ {
+  "id": "annapurna_circuit_route_lowres",
+  "category": "route_diagram",
+  "title": "File:Annapurna Circuit Trek with Tilicho Lake.png",
+  "notes": "Low-resolution trek route diagram (800x1200)"
+ },
+ {
+  "id": "nps_grand_canyon_shaded_relief",
+  "category": "scale_bar_trail_map",
+  "title": "File:Grand Canyon National Park, Arizona LOC 91682960.jpg",
+  "notes": "Colourful NPS shaded-relief brochure map"
+ },
+ {
+  "id": "trail_map_5958",
+  "category": "photo",
+  "title": "File:Trail map 5958.jpg",
+  "notes": "Photo of a trail map board at an angle"
+ },
+ {
+  "id": "photo_hebble_trail_board_uk",
+  "category": "photo",
+  "title": "File:Hebble Trail with map and information board - geograph.org.uk - 7915867.jpg",
+  "notes": "Photo of outdoor trail map board, UK"
+ },
+ {
+  "id": "photo_achenkirch_wanderkarte_at",
+  "category": "photo",
+  "title": "File:AUT – Tirol – KB – Bezirk Schwaz in Tirol — Gemeinde Achenkirch — Christlum (Tafel mit Wanderkarte Tiroler Steinöl Erlebnis-Wanderweg) Mattes 2021-10-03.jpg",
+  "notes": "Photo of Austrian hiking map board (German)"
+ },
+ {
+  "id": "photo_keppgrund_tafel_de",
+  "category": "photo",
+  "title": "File:DD-Keppgrundweg-Tafel.jpg",
+  "notes": "Photo of German trail board, portrait"
+ },
+ {
+  "id": "topo_white_mountains_1879",
+  "category": "gridded_topo",
+  "title": "File:Topographical map of the White Mountains showing location of the Portland & Ogdensburg Railroad. (1879) (IA dr topographical-map-of-the-white-mountains-showing-location-of-the-portland-00904033).jpg",
+  "notes": "19th-century topo with hachures"
+ }
+]

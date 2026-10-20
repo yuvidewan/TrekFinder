@@ -12,11 +12,16 @@ Transform models
 - 2 points  -> similarity (uniform scale, rotation, translation).
 - 3+ points -> least-squares affine (adds independent x/y scale and skew).
 
-Quality
+Quality (revised in Phase 0, see experiments/calib_sim.py and calib_tune.py)
 -------
-Error is the leave-one-out RMSE in metres: refit without each point and measure how
-far that point lands from where it should. With exactly the minimum number of points
-the fit is always perfect, so the error is unmeasurable (returned as None).
+The reported error is the 95% upper confidence bound of the map-wide RMS position
+error, estimated from the affine fit's residuals and the leverage of every map point
+(residual_error). It needs 4+ points; with fewer the error is unmeasurable (None).
+
+Good = 5+ points, bound <= 25 m, hull coverage >= 15%. In simulation over 5 georeferenced
+maps this rated ~4.5% of Goods worse than 25 m, the worst at 33 m. The plan v2 rule
+(leave-one-out RMSE, 4 points, 50% coverage) was ~2x pessimistic for well-spread points,
+under-reported error in 89% of clustered cases, and made Good unreachable in practice.
 """
 
 from __future__ import annotations
@@ -34,19 +39,21 @@ _E2 = _F * (2 - _F)
 
 GOOD_MAX_RMSE_M = 25.0
 APPROX_MAX_RMSE_M = 100.0
-GOOD_MIN_POINTS = 4
-GOOD_MIN_HULL_COVERAGE = 0.5
+GOOD_MIN_POINTS = 5
+GOOD_MIN_HULL_COVERAGE = 0.15
+RESID_CONF = 0.95
 
 
 # ---------------------------------------------------------------- local tangent plane
 
-def _ecef(lat_deg: float, lon_deg: float) -> np.ndarray:
-    lat, lon = math.radians(lat_deg), math.radians(lon_deg)
-    n = _A / math.sqrt(1 - _E2 * math.sin(lat) ** 2)
+def _ecef(lat_deg, lon_deg) -> np.ndarray:
+    """ECEF metres; accepts scalars or arrays, returns shape (3, ...)."""
+    lat, lon = np.radians(lat_deg), np.radians(lon_deg)
+    n = _A / np.sqrt(1 - _E2 * np.sin(lat) ** 2)
     return np.array([
-        n * math.cos(lat) * math.cos(lon),
-        n * math.cos(lat) * math.sin(lon),
-        n * (1 - _E2) * math.sin(lat),
+        n * np.cos(lat) * np.cos(lon),
+        n * np.cos(lat) * np.sin(lon),
+        n * (1 - _E2) * np.sin(lat),
     ])
 
 
@@ -67,21 +74,31 @@ class LocalPlane:
             [cp * cl, cp * sl, sp],
         ])
 
+    def en_array(self, lat, lon) -> tuple[np.ndarray, np.ndarray]:
+        lat, lon = np.asarray(lat, float), np.asarray(lon, float)
+        d = _ecef(lat, lon) - _ecef(self.origin_lat, self.origin_lon).reshape((3,) + (1,) * lat.ndim)
+        e, n, _ = np.tensordot(self._rot(), d, axes=1)
+        return e, n
+
+    def latlon_array(self, east, north) -> tuple[np.ndarray, np.ndarray]:
+        # Invert by iterating en_array; converges in a few steps for local distances.
+        east, north = np.asarray(east, float), np.asarray(north, float)
+        lat = np.full_like(east, self.origin_lat)
+        lon = np.full_like(east, self.origin_lon)
+        m_per_deg_lat = math.radians(1) * _A
+        for _ in range(6):
+            e, n = self.en_array(lat, lon)
+            lat = lat + (north - n) / m_per_deg_lat
+            lon = lon + (east - e) / (m_per_deg_lat * np.cos(np.radians(lat)))
+        return lat, lon
+
     def to_en(self, lat: float, lon: float) -> tuple[float, float]:
-        d = _ecef(lat, lon) - _ecef(self.origin_lat, self.origin_lon)
-        e, n, _ = self._rot() @ d
+        e, n = self.en_array(lat, lon)
         return float(e), float(n)
 
     def to_latlon(self, east: float, north: float) -> tuple[float, float]:
-        # Invert by iterating to_en; converges in a few steps for local distances.
-        lat, lon = self.origin_lat, self.origin_lon
-        for _ in range(6):
-            e, n = self.to_en(lat, lon)
-            m_per_deg_lat = math.radians(1) * _A
-            m_per_deg_lon = m_per_deg_lat * math.cos(math.radians(lat))
-            lat += (north - n) / m_per_deg_lat
-            lon += (east - e) / m_per_deg_lon
-        return lat, lon
+        lat, lon = self.latlon_array(east, north)
+        return float(lat), float(lon)
 
 
 # ---------------------------------------------------------------- transforms
@@ -165,6 +182,49 @@ def loo_rmse(px, en) -> float | None:
     return float(math.sqrt(np.mean(errs)))
 
 
+def _chi2_quantile(p: float, dof: int) -> float:
+    """Wilson–Hilferty approximation; slightly conservative for tiny dof, no SciPy needed
+    (keeps the C++ port dependency-free)."""
+    # inverse normal via Acklam-free rational approx is overkill; we only need p=0.1/0.05
+    z = {0.05: -1.6449, 0.1: -1.2816, 0.2: -0.8416}[p]
+    k = float(dof)
+    return k * (1 - 2 / (9 * k) + z * math.sqrt(2 / (9 * k))) ** 3
+
+
+def residual_error(px, en, image_size: tuple[int, int], conf: float | None = None,
+                   grid: int = 15) -> tuple[float, float] | None:
+    """Map-wide RMS position error of an affine fit, estimated from its residuals.
+
+    sigma^2 = RSS / (2n - 6) is the per-axis noise of the control points. The fitted
+    transform's error at map point g has variance sigma^2 * g'(A'A)^-1 g per axis
+    (leverage), so averaging over a grid covering the image gives the expected RMS error
+    of the dot anywhere on the map. Clustered points produce high leverage far away, so
+    this penalises poor spread on its own.
+
+    Returns (estimate, upper bound at `conf`), or None for fewer than 4 points (no
+    residual degrees of freedom)."""
+    px, en = np.asarray(px, float), np.asarray(en, float)
+    n = len(px)
+    if n < 4:
+        return None
+    A = np.column_stack([px, np.ones(n)])
+    try:
+        ata_inv = np.linalg.inv(A.T @ A)
+    except np.linalg.LinAlgError:
+        return None
+    sol, *_ = np.linalg.lstsq(A, en, rcond=None)
+    rss = float(np.sum((A @ sol - en) ** 2))
+    dof = 2 * n - 6
+    w, h = image_size
+    gx, gy = np.meshgrid(np.linspace(0, w, grid), np.linspace(0, h, grid))
+    G = np.column_stack([gx.ravel(), gy.ravel(), np.ones(gx.size)])
+    lev = float(np.mean(np.einsum("ij,jk,ik->i", G, ata_inv, G)))
+    sigma2 = rss / dof
+    conf = RESID_CONF if conf is None else conf
+    sigma2_up = rss / _chi2_quantile(round(1 - conf, 2), dof)
+    return math.sqrt(2 * sigma2 * lev), math.sqrt(2 * sigma2_up * lev)
+
+
 # ---------------------------------------------------------------- coverage
 
 def _convex_hull(points: np.ndarray) -> np.ndarray:
@@ -222,6 +282,10 @@ class Calibration:
     coverage: float
     status: Status
     n_points: int
+    # Diagnostics: both error estimators, whichever `method` was used for rmse_m.
+    loo_rmse_m: float | None = None
+    resid_rmse_m: float | None = None
+    resid_upper_m: float | None = None
 
     def latlon_to_px(self, lat: float, lon: float) -> tuple[float, float]:
         if self.transform is None:
@@ -259,7 +323,10 @@ def classify(n: int, rmse_m: float | None, coverage: float) -> Status:
     return Status.APPROXIMATE
 
 
-def calibrate(points: list[ControlPoint], image_size: tuple[int, int]) -> Calibration:
+def calibrate(points: list[ControlPoint], image_size: tuple[int, int],
+              method: str = "residual") -> Calibration:
+    """method: "loo" (plan v2: leave-one-out RMSE) or "residual" (upper confidence bound
+    of the residual-based map-wide error; see residual_error)."""
     n = len(points)
     if n == 0:
         return Calibration(LocalPlane(0.0, 0.0), None, None, 0.0, Status.INSUFFICIENT, 0)
@@ -268,14 +335,20 @@ def calibrate(points: list[ControlPoint], image_size: tuple[int, int]) -> Calibr
         float(np.mean([p.lon for p in points])),
     )
     px = np.array([p.px for p in points], float)
-    en = np.array([plane.to_en(p.lat, p.lon) for p in points], float)
+    e, nn = plane.en_array([p.lat for p in points], [p.lon for p in points])
+    en = np.column_stack([e, nn])
     transform = None
     if n >= 2:
         try:
             transform = fit(px, en)
         except ValueError:
             transform = None
-    rmse = loo_rmse(px, en) if transform is not None else None
     coverage = hull_coverage(px, image_size)
-    status = classify(n, rmse, coverage) if transform is not None else Status.INSUFFICIENT
-    return Calibration(plane, transform, rmse, coverage, status, n)
+    if transform is None:
+        return Calibration(plane, None, None, coverage, Status.INSUFFICIENT, n)
+    loo = loo_rmse(px, en)
+    resid = residual_error(px, en, image_size)
+    r_est, r_up = resid if resid else (None, None)
+    rmse = loo if method == "loo" else r_up
+    status = classify(n, rmse, coverage)
+    return Calibration(plane, transform, rmse, coverage, status, n, loo, r_est, r_up)

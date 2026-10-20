@@ -1,0 +1,59 @@
+[
+ {
+  "id": "swisstopo_zermatt_matterhorn",
+  "file": "images/swisstopo_zermatt_matterhorn.png",
+  "category": "tile_topo",
+  "provider": "swisstopo",
+  "license": "swisstopo OGD (free use with attribution)",
+  "attribution": "© swisstopo",
+  "georef": {
+   "type": "web_mercator_tiles",
+   "zoom": 15,
+   "tile_x0": 17080,
+   "tile_y0": 11656,
+   "tile_size": 256
+  },
+  "center": [
+   45.98,
+   7.7
+  ]
+ },
+ {
+  "id": "gsi_kamikochi_ja",
+  "file": "images/gsi_kamikochi_ja.png",
+  "category": "tile_topo",
+  "provider": "gsi_japan",
+  "license": "GSI Japan tiles (free use with attribution)",
+  "attribution": "出典：国土地理院",
+  "georef": {
+   "type": "web_mercator_tiles",
+   "zoom": 15,
+   "tile_x0": 28908,
+   "tile_y0": 12835,
+   "tile_size": 256
+  },
+  "center": [
+   36.25,
+   137.64
+  ]
+ },
+ {
+  "id": "otm_namche_everest_trek",
+  "file": "images/otm_namche_everest_trek.png",
+  "category": "tile_topo",
+  "provider": "opentopomap",
+  "license": "CC-BY-SA (OpenTopoMap) / ODbL (OpenStreetMap data)",
+  "attribution": "© OpenTopoMap (CC-BY-SA), © OpenStreetMap contributors",
+  "georef": {
+   "type": "web_mercator_tiles",
+   "zoom": 14,
+   "tile_x0": 12134,
+   "tile_y0": 6869,
+   "tile_size": 256
+  },
+  "center": [
+   27.81,
+   86.71
+  ]
+ }
+]

@@ -72,11 +72,17 @@ def test_similarity_handles_y_down_reflection():
     assert np.allclose(t.apply(probe), expected, atol=1e-6)
 
 
-def test_four_exact_corners_is_good():
-    c = calibrate(cps(CORNERS), (W, H))
+def test_spread_exact_points_are_good():
+    c = calibrate(cps(SPREAD8), (W, H))
     assert c.status is Status.GOOD
     assert c.rmse_m == pytest.approx(0.0, abs=0.05)
     assert c.transform.metres_per_pixel() == pytest.approx(2.0, rel=1e-3)
+
+
+def test_four_points_never_good():
+    # 4 points leave only 2 residual degrees of freedom: too little evidence for Good.
+    c = calibrate(cps(CORNERS), (W, H))
+    assert c.status is Status.APPROXIMATE
 
 
 def test_round_trip_through_calibration():
@@ -112,8 +118,23 @@ def test_three_points_approximate_error_unmeasurable():
 def test_clustered_points_never_good():
     cluster = [(1000, 1000), (1300, 1000), (1300, 1250), (1000, 1250), (1150, 1100)]
     c = calibrate(cps(cluster), (W, H))
-    assert c.coverage < 0.5
-    assert c.status is Status.APPROXIMATE
+    assert c.coverage < 0.15
+    assert c.status is not Status.GOOD
+
+
+def test_clustered_noise_is_amplified_by_leverage():
+    # Same small noise: a tight cluster must report a much larger map-wide error than a
+    # well-spread layout, because errors extrapolate far from the cluster.
+    cluster = [(1000 + dx, 1000 + dy) for dx in (0, 150, 300) for dy in (0, 150, 300)]
+    tight = calibrate(cps(cluster, noise_m=5, seed=3), (W, H))
+    spread = calibrate(cps(SPREAD8 + [(2000, 1500)], noise_m=5, seed=3), (W, H))
+    assert tight.rmse_m > 4 * spread.rmse_m
+    assert tight.status is not Status.GOOD
+
+
+def test_loo_method_still_available():
+    c = calibrate(cps(SPREAD8, noise_m=5, seed=1), (W, H), method="loo")
+    assert c.rmse_m == c.loo_rmse_m is not None
 
 
 def test_noise_drives_status():
