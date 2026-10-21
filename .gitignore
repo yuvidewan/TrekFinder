@@ -26,3 +26,4 @@ app/**/android/local.properties
 Thumbs.db
 .idea/
 .vscode/
+lab/corpus/osm/

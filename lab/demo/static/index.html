@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TrekFinder Engine Demo</title>
+<style>
+  :root {
+    --bg: #f6f5f1; --panel: #ffffff; --ink: #1d2b24; --muted: #66736c; --line: #e2e0d8;
+    --accent: #2f6f4f; --accent-soft: #e4efe8; --warn: #a3561c; --warn-soft: #f8ebdf; --bad: #a02c2c; --bad-soft: #f6e3e3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #141815; --panel: #1c211e; --ink: #e5ebe7; --muted: #95a29a; --line: #2c332f;
+            --accent: #6fc199; --accent-soft: #1f3329; --warn: #e3a36f; --warn-soft: #3a2a1d; --bad: #e98b8b; --bad-soft: #3a2020; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.5 system-ui, "Segoe UI", sans-serif; background: var(--bg); color: var(--ink); }
+  header { padding: 18px 24px; border-bottom: 1px solid var(--line); display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+  header h1 { font-size: 20px; margin: 0; }
+  header span { color: var(--muted); font-size: 13px; }
+  .wrap { display: grid; grid-template-columns: 290px 1fr; min-height: calc(100vh - 62px); }
+  aside { border-right: 1px solid var(--line); padding: 16px; overflow-y: auto; max-height: calc(100vh - 62px); position: sticky; top: 0; }
+  main { padding: 20px 28px 60px; min-width: 0; }
+  .maplist button { display: block; width: 100%; text-align: left; border: 1px solid transparent; background: none; color: var(--ink);
+    padding: 7px 9px; border-radius: 8px; cursor: pointer; font: inherit; font-size: 13.5px; }
+  .maplist button:hover { background: var(--accent-soft); }
+  .maplist button.on { background: var(--accent-soft); border-color: var(--accent); }
+  .maplist small { display: block; color: var(--muted); font-size: 11.5px; }
+  .tag { display: inline-block; font-size: 10.5px; padding: 0 6px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); margin-left: 4px; }
+  h2 { font-size: 15px; margin: 20px 0 6px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  section.step { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin-bottom: 18px; }
+  section.step h3 { margin: 0 0 4px; font-size: 17px; }
+  section.step p.why { margin: 0 0 12px; color: var(--muted); font-size: 13.5px; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  button.run { background: var(--accent); color: #fff; border: 0; padding: 8px 14px; border-radius: 8px; font: inherit; font-weight: 600; cursor: pointer; }
+  button.run:disabled { opacity: .5; cursor: wait; }
+  label { font-size: 13px; color: var(--muted); }
+  select, input[type=number] { font: inherit; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); width: auto; }
+  img.big { max-width: 100%; border-radius: 8px; border: 1px solid var(--line); display: block; margin-top: 12px; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .pair img { max-width: 100%; border-radius: 8px; border: 1px solid var(--line); }
+  .layers { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-top: 12px; }
+  .layer { border: 2px solid var(--line); border-radius: 10px; padding: 6px; cursor: pointer; background: var(--panel); }
+  .layer.on { border-color: var(--accent); }
+  .layer img { width: 100%; border-radius: 6px; background: #fff; }
+  .sw { display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: -2px; border: 1px solid #0003; margin-right: 4px; }
+  .stats { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+  .stat { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; min-width: 120px; }
+  .stat b { display: block; font-size: 19px; }
+  .stat span { font-size: 12px; color: var(--muted); }
+  .status { font-weight: 700; padding: 2px 10px; border-radius: 12px; }
+  .status.good { background: var(--accent-soft); color: var(--accent); }
+  .status.approximate { background: var(--warn-soft); color: var(--warn); }
+  .status.insufficient { background: var(--bad-soft); color: var(--bad); }
+  .note { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  .msg { margin-top: 10px; padding: 8px 12px; border-radius: 8px; background: var(--warn-soft); color: var(--warn); font-size: 14px; }
+  .legend { font-size: 13px; margin-top: 8px; }
+  .legend i { display: inline-block; width: 22px; height: 4px; vertical-align: middle; margin: 0 4px 0 12px; border-radius: 2px; }
+  .upload { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 13px; }
+  .empty { color: var(--muted); padding: 40px 0; text-align: center; }
+  @media (max-width: 800px) {
+    .wrap { grid-template-columns: 1fr; }
+    aside { position: static; max-height: 280px; border-right: 0; border-bottom: 1px solid var(--line); }
+    main { padding: 16px; }
+    .pair { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>TrekFinder engine demo</h1>
+  <span>Phase 0 lab code, running locally. Pick a map, then run each step.</span>
+</header>
+<div class="wrap">
+  <aside>
+    <div class="row"><label for="edge">Working size</label>
+      <select id="edge"><option value="2000">2000 px (fast)</option><option value="3000" selected>3000 px</option><option value="5000">5000 px (slow, sharper)</option></select>
+    </div>
+    <h2>Sample maps</h2>
+    <div class="maplist" id="maplist">Loading…</div>
+    <div class="upload">
+      <b>Try your own map</b><br>
+      <input type="file" id="file" accept=".jpg,.jpeg,.png,.tif,.tiff,.pdf,.webp">
+      <div class="note">JPG, PNG, TIFF, WebP or PDF (page 1). Stays on this laptop.</div>
+    </div>
+  </aside>
+  <main id="main"><div class="empty">Choose a map on the left.</div></main>
+</div>
+
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+let maps = [], current = null, chosenLayer = null;
+const edge = () => $('#edge').value;
+
+async function api(path, opts = {}) {
+  const r = await fetch(path, opts);
+  const j = await r.json().catch(() => ({ error: 'Server error' }));
+  if (!r.ok || j.error) throw new Error(j.error || r.statusText);
+  return j;
+}
+async function busy(btn, fn) {
+  const label = btn.textContent; btn.disabled = true; btn.textContent = 'Working…';
+  try { await fn(); } catch (e) { alert(e.message); } finally { btn.disabled = false; btn.textContent = label; }
+}
+const pct = v => v == null ? '—' : Math.round(v * 100) + '%';
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+async function loadMaps(select) {
+  maps = await api('/api/maps');
+  const groups = {};
+  maps.forEach(m => (groups[m.category] ||= []).push(m));
+  $('#maplist').innerHTML = Object.keys(groups).sort().map(g =>
+    `<h2>${esc(g.replaceAll('_', ' '))}</h2>` + groups[g].map(m =>
+      `<button data-id="${esc(m.id)}">${esc(m.id.replace('upload:', ''))}${m.georef ? '<span class="tag">GPS-ready</span>' : ''}
+       <small>${esc(m.notes || '')}</small></button>`).join('')).join('');
+  $('#maplist').querySelectorAll('button').forEach(b => b.onclick = () => pick(b.dataset.id));
+  if (select) pick(select);
+}
+
+function pick(id) {
+  current = maps.find(m => m.id === id); chosenLayer = null;
+  $('#maplist').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.id === id));
+  const m = current;
+  $('#main').innerHTML = `
+    <section class="step"><h3>${esc(m.id)}</h3>
+      <p class="why">${esc(m.notes || '')} · License: ${esc(m.license || '?')}</p>
+      <div class="row"><button class="run" id="b0">1. Load map</button><span class="note" id="t0"></span></div>
+      <div id="r0"></div></section>
+    <section class="step"><h3>2. Find and straighten the map</h3>
+      <p class="why">For photos of boards or paper: find the map's outline and flatten it. On a scan this may find an inner frame or nothing, which is fine.</p>
+      <button class="run" id="b1">Run</button><div id="r1"></div></section>
+    <section class="step"><h3>3. Colour layers</h3>
+      <p class="why">Separates drawn ink (lines, text, symbols) from the paper, then groups ink by colour. Click the layer that holds the trails or rivers.</p>
+      <button class="run" id="b2">Run</button><div id="r2"></div></section>
+    <section class="step"><h3>4. Extract lines from the chosen layer</h3>
+      <p class="why">Removes letters and dots, joins dashes, thins to centre-lines.${m.osm ? ' Scored against OpenStreetMap: <b style="color:#00aa00">green = real trails</b>, <b style="color:#008ce6">blue = real water</b>, <b style="color:#c800c8">purple = what the engine found</b>.' : ''}</p>
+      <button class="run" id="b3">Run on selected layer</button><div id="r3"></div></section>
+    <section class="step"><h3>5. Calibrate and walk with GPS</h3>
+      <p class="why">${m.georef ? 'Simulates a user tapping reference points (with finger and GPS error), then walking a real trail with noisy GPS. Shows the dot, its uncertainty circle and whether the app would call the calibration Good.' : 'Needs a GPS-ready sample (USGS sheets or the Swiss / Japan / Everest tile maps).'}</p>
+      ${m.georef ? `<div class="row">
+        <label>Points <input type="number" id="cn" value="6" min="1" max="15"></label>
+        <label>Layout <select id="cl"><option value="spread">spread out</option><option value="cluster">clustered</option></select></label>
+        <label>Tap error px <input type="number" id="ct" value="8" min="0" max="80"></label>
+        <label>GPS error at points (m) <input type="number" id="cg" value="5" min="0" max="50"></label>
+        <label>GPS error while walking (m) <input type="number" id="cw" value="8" min="0" max="50"></label>
+        <label>Seed <input type="number" id="cs" value="1"></label>
+        <button class="run" id="b4">Run</button></div><div id="r4"></div>` : ''}
+    </section>`;
+  $('#b0').onclick = e => busy(e.target, step0);
+  $('#b1').onclick = e => busy(e.target, step1);
+  $('#b2').onclick = e => busy(e.target, step2);
+  $('#b3').onclick = e => busy(e.target, step3);
+  if (m.georef) $('#b4').onclick = e => busy(e.target, step4);
+  busy($('#b0'), step0);
+}
+
+const id = () => encodeURIComponent(current.id);
+
+async function step0() {
+  const j = await api(`/api/preview/${id()}?edge=${edge()}`);
+  $('#t0').textContent = `${j.width} × ${j.height} px · loaded in ${j.seconds}s`;
+  $('#r0').innerHTML = `<img class="big" src="${j.image}">`;
+}
+async function step1() {
+  const j = await api(`/api/straighten/${id()}?edge=${edge()}`, { method: 'POST' });
+  $('#r1').innerHTML = j.found
+    ? `<div class="pair"><img src="${j.outlined}"><img src="${j.flat}"></div>
+       <div class="note">Outline covers ${pct(j.area)} of the image · ${esc(j.method)} · ${j.seconds}s</div>`
+    : `<div class="msg">${esc(j.message)}</div>`;
+}
+async function step2() {
+  const j = await api(`/api/layers/${id()}?edge=${edge()}`, { method: 'POST' });
+  $('#r2').innerHTML = `
+    <div class="note">Ink is ${pct(j.ink_share)} of the map · ${j.seconds}s · paper colours:
+      ${j.paper.map(c => `<span class="sw" style="background:${c}"></span>`).join('')}</div>
+    <div class="layers">${j.layers.map(l => `
+      <div class="layer" data-i="${l.index}"><img src="${l.image}">
+        <div><span class="sw" style="background:${l.color}"></span>layer ${l.index} · ${pct(l.share)} of ink</div></div>`).join('')}</div>`;
+  $('#r2').querySelectorAll('.layer').forEach(el => el.onclick = () => {
+    chosenLayer = +el.dataset.i;
+    $('#r2').querySelectorAll('.layer').forEach(x => x.classList.toggle('on', x === el));
+  });
+}
+async function step3() {
+  if (chosenLayer == null) { alert('Run step 3 and click a layer first.'); return; }
+  const j = await api(`/api/lines/${id()}?edge=${edge()}&layer=${chosenLayer}`, { method: 'POST' });
+  const s = j.score;
+  $('#r3').innerHTML = (s ? `<div class="stats">
+      <div class="stat"><b>${pct(s.trail_recall)}</b><span>of real trails found</span></div>
+      <div class="stat"><b>${pct(s.water_recall)}</b><span>of real water found</span></div>
+      <div class="stat"><b>${pct(s.precision)}</b><span>of found lines are real features</span></div>
+      <div class="stat"><b>${s.metres_per_px} m</b><span>per pixel (tolerance ${s.tolerance_m} m)</span></div></div>`
+    : `<div class="note">No ground truth for this map, so no score. Purple = extracted lines.</div>`)
+    + `<img class="big" src="${j.image}"><div class="note">Line extraction took ${j.seconds}s.</div>`;
+}
+async function step4() {
+  const body = { points: +$('#cn').value, layout: $('#cl').value, tap_px: +$('#ct').value,
+                 point_gps_m: +$('#cg').value, walk_gps_m: +$('#cw').value, seed: +$('#cs').value };
+  const j = await api(`/api/calibrate/${id()}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const w = j.walk;
+  $('#r4').innerHTML = `
+    <div class="stats">
+      <div class="stat"><span>App says</span><b><span class="status ${j.status}">${j.status}</span></b></div>
+      <div class="stat"><b>${j.error_bound_m ?? 'not measurable'}${j.error_bound_m != null ? ' m' : ''}</b><span>error the app reports (95% bound)</span></div>
+      <div class="stat"><b>${j.true_error_m ?? '—'}${j.true_error_m != null ? ' m' : ''}</b><span>true map error (only we know this)</span></div>
+      <div class="stat"><b>${pct(j.coverage)}</b><span>map area spanned by points</span></div>
+      ${w ? `<div class="stat"><b>${w.dot_error_median_m} m</b><span>dot error while walking (median, ${w.fixes} fixes over ${w.trail_km} km)</span></div>
+             <div class="stat"><b>${pct(w.inside_circle)}</b><span>of the time the true spot was inside the ${w.circle_radius_m} m circle</span></div>` : ''}
+    </div>
+    ${j.message ? `<div class="msg">${esc(j.message)}</div>` : ''}
+    <div class="legend"><i style="background:#ff0000"></i>tapped reference points <i style="background:#00a000"></i>real trail <i style="background:#c800c8"></i>where the app put the dot <i style="background:#0078ff"></i>uncertainty circle at the end</div>
+    ${j.walk_image ? `<img class="big" src="${j.walk_image}">` : ''}
+    <img class="big" src="${j.image}">`;
+}
+
+$('#file').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  const fd = new FormData(); fd.append('file', f);
+  try { const j = await api('/api/upload', { method: 'POST', body: fd }); await loadMaps(j.id); }
+  catch (err) { alert(err.message); }
+};
+$('#edge').onchange = () => current && pick(current.id);
+loadMaps();
+</script>
+</body>
+</html>

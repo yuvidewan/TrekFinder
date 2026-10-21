@@ -50,6 +50,49 @@ def from_tiles(georef: dict, size: tuple[int, int]) -> tuple[LatLonFn, tuple[int
     return fn, size
 
 
+def inverse_geotiff(path: str) -> LatLonFn:
+    """WGS84 (lat, lon) -> pixel (x, y), pixel centres."""
+    import rasterio
+    from pyproj import Transformer
+
+    with rasterio.open(path) as r:
+        inv, crs = ~r.transform, r.crs
+    to_crs = Transformer.from_crs("EPSG:4326", crs.to_wkt(), always_xy=True)
+
+    def fn(lat, lon):
+        x, y = to_crs.transform(np.asarray(lon, float), np.asarray(lat, float))
+        col = inv.a * x + inv.b * y + inv.c - 0.5
+        row = inv.d * x + inv.e * y + inv.f - 0.5
+        return np.asarray(col), np.asarray(row)
+
+    return fn
+
+
+def inverse_tiles(georef: dict) -> LatLonFn:
+    z, tx0, ty0, ts = georef["zoom"], georef["tile_x0"], georef["tile_y0"], georef["tile_size"]
+    n = 2 ** z
+
+    def fn(lat, lon):
+        lat, lon = np.asarray(lat, float), np.asarray(lon, float)
+        x = (lon + 180) / 360 * n
+        y = (1 - np.arcsinh(np.tan(np.radians(lat))) / math.pi) / 2 * n
+        return (x - tx0) * ts - 0.5, (y - ty0) * ts - 0.5
+
+    return fn
+
+
+def load_inverse_all(corpus_dir: str) -> dict[str, LatLonFn]:
+    """Every georeferenced corpus map's (lat, lon) -> pixel function, keyed by map id."""
+    out = {}
+    manifest = json.load(open(os.path.join(corpus_dir, "manifest.json"), encoding="utf-8"))
+    for m in manifest["maps"]:
+        if m["file"].endswith(".tif"):
+            out[m["id"]] = inverse_geotiff(os.path.join(corpus_dir, m["file"]))
+        elif m.get("georef", {}).get("type") == "web_mercator_tiles":
+            out[m["id"]] = inverse_tiles(m["georef"])
+    return out
+
+
 def load_all(corpus_dir: str) -> dict[str, tuple[LatLonFn, tuple[int, int]]]:
     """Every corpus map with exact georeferencing, keyed by map id."""
     import cv2

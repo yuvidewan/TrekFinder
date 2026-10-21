@@ -174,11 +174,17 @@ def extract_ink_layers(img: np.ndarray, k_ink: int = 6, k_paper: int = 4,
     bg = cv2.medianBlur(img, k)
     lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB).astype(np.float32)
     lab_bg = cv2.cvtColor(bg, cv2.COLOR_BGR2LAB).astype(np.float32)
-    ink = np.sqrt(((lab - lab_bg) ** 2).sum(-1)) > threshold
-    # Two kinds of ink cluster separately so rare colours (blue water, red trails) are
-    # not merged into the far more common black/grey text and linework. Chroma is
-    # measured relative to neutral (OpenCV stores a/b offset by 128).
+    # Chroma is measured relative to neutral (OpenCV stores a/b offset by 128).
     chroma = np.hypot(lab[:, :, 1] - 128, lab[:, :, 2] - 128)
+    chroma_bg = np.hypot(lab_bg[:, :, 1] - 128, lab_bg[:, :, 2] - 128)
+    # Ink is drawn ON the paper: darker or more saturated than its surroundings. A plain
+    # colour difference also fires along the edges of fills (green woodland meeting white
+    # paper), which produces a fringe of false "lines" everywhere.
+    darker = lab[:, :, 0] < lab_bg[:, :, 0] - 10
+    more_saturated = chroma > chroma_bg + 12
+    ink = (np.sqrt(((lab - lab_bg) ** 2).sum(-1)) > threshold) & (darker | more_saturated)
+    # Two kinds of ink cluster separately so rare colours (blue water, red trails) are
+    # not merged into the far more common black/grey text and linework.
     colour_ink = ink & (chroma >= 18)
     grey_ink = ink & ~colour_ink
     parts = []

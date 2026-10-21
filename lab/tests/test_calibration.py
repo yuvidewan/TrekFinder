@@ -106,13 +106,15 @@ def test_two_points_approximate_with_similarity():
     c = calibrate(cps([(200, 200), (3800, 2800)]), (W, H))
     assert c.status is Status.APPROXIMATE
     assert c.transform.kind == "similarity"
-    assert c.rmse_m is None
+    assert c.resid_upper_m is None          # not measurable...
+    assert c.prior_m == c.rmse_m > 0        # ...so estimated from assumed noise
 
 
-def test_three_points_approximate_error_unmeasurable():
+def test_three_points_approximate_error_estimated_not_measured():
     c = calibrate(cps(CORNERS[:3]), (W, H))
     assert c.status is Status.APPROXIMATE
-    assert c.rmse_m is None
+    assert c.resid_upper_m is None
+    assert c.prior_m is not None
 
 
 def test_clustered_points_never_good():
@@ -161,9 +163,35 @@ def test_uncertainty_combines_gps_and_calibration():
     assert c.uncertainty_px(10.0) == pytest.approx(r / 2.0, rel=0.05)
 
 
-def test_unmeasured_error_assumes_ceiling_not_zero():
-    c = calibrate(cps(CORNERS[:3]), (W, H))
-    assert c.uncertainty_m(5.0) == pytest.approx(math.hypot(5.0, 100.0))
+def test_few_clustered_points_are_not_trusted():
+    # Regression (found in the demo): 3 clustered points were shown with a flat 100 m
+    # circle while the dot was really ~375 m off. Clustered few-point fits must report
+    # large error and must not be shown as a usable position.
+    tight = [(1800, 1400), (1950, 1420), (1880, 1560)]
+    spread = [(200, 200), (3800, 300), (2000, 2800)]
+    c_tight = calibrate(cps(tight), (W, H))
+    c_spread = calibrate(cps(spread), (W, H))
+    assert c_tight.rmse_m > 5 * c_spread.rmse_m
+    assert c_tight.status is Status.INSUFFICIENT
+    assert c_spread.status is Status.APPROXIMATE
+
+
+def test_few_point_circle_contains_true_error():
+    # Monte Carlo: with 3 noisy, spread points, the reported circle should contain the
+    # true map-wide error in the large majority of runs.
+    rng = np.random.default_rng(5)
+    inside = 0
+    for _ in range(200):
+        pts = [(rng.uniform(200, 1300), rng.uniform(200, 1000)),
+               (rng.uniform(2700, 3800), rng.uniform(200, 1000)),
+               (rng.uniform(1300, 2700), rng.uniform(2000, 2800))]
+        noisy = [ControlPoint((x + rng.normal(0, 10), y + rng.normal(0, 10)), *true_latlon(x, y))
+                 for x, y in pts]
+        c = calibrate(noisy, (W, H))
+        gx, gy = np.meshgrid(np.linspace(0, W, 12), np.linspace(0, H, 12))
+        err = [haversine(*true_latlon(x, y), *c.px_to_latlon(x, y)) for x, y in zip(gx.ravel(), gy.ravel())]
+        inside += math.sqrt(np.mean(np.square(err))) <= c.rmse_m
+    assert inside / 200 > 0.9
 
 
 def test_hull_coverage_full_image():

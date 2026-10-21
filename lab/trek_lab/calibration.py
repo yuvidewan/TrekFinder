@@ -225,6 +225,37 @@ def residual_error(px, en, image_size: tuple[int, int], conf: float | None = Non
     return math.sqrt(2 * sigma2 * lev), math.sqrt(2 * sigma2_up * lev)
 
 
+PRIOR_GPS_M = 10.0   # assumed error of an "I'm here" fix / entered coordinate
+PRIOR_TAP_PX = 10.0  # assumed finger-tap error on the map, in image pixels
+PRIOR_SAFETY = 2.0   # these are guesses, not measurements: stay cautious
+
+
+def prior_error(px, transform: "Transform", image_size: tuple[int, int], grid: int = 15) -> float:
+    """Map-wide RMS error expected from assumed tap/GPS noise, for fits with too few points
+    to measure their own error (2-3 points). Clustered points extrapolate badly, so the
+    leverage term grows with distance from them, exactly as in residual_error."""
+    px = np.asarray(px, float)
+    n = len(px)
+    mpp = transform.metres_per_pixel()
+    sigma = math.hypot(PRIOR_GPS_M, PRIOR_TAP_PX * mpp)
+    w, h = image_size
+    gx, gy = np.meshgrid(np.linspace(0, w, grid), np.linspace(0, h, grid))
+    G = np.column_stack([gx.ravel(), gy.ravel()])
+    if n == 2:
+        # similarity: one fixed point (midpoint) plus rotation/scale from the baseline;
+        # error ~ sigma * sqrt(1/2 + 2 d^2 / L^2) at distance d from the midpoint
+        c, L = px.mean(0), np.linalg.norm(px[1] - px[0])
+        d2 = ((G - c) ** 2).sum(1)
+        lev = 0.5 + 2 * d2 / max(L, 1.0) ** 2
+        rms = sigma * math.sqrt(float(np.mean(lev)))
+    else:
+        A = np.column_stack([px, np.ones(n)])
+        Gh = np.column_stack([G, np.ones(len(G))])
+        lev = np.einsum("ij,jk,ik->i", Gh, np.linalg.inv(A.T @ A), Gh)
+        rms = sigma * math.sqrt(2 * float(np.mean(lev)))
+    return PRIOR_SAFETY * rms
+
+
 # ---------------------------------------------------------------- coverage
 
 def _convex_hull(points: np.ndarray) -> np.ndarray:
@@ -286,6 +317,8 @@ class Calibration:
     loo_rmse_m: float | None = None
     resid_rmse_m: float | None = None
     resid_upper_m: float | None = None
+    # Set when rmse_m came from assumed tap/GPS noise (2-3 points), not measurement.
+    prior_m: float | None = None
 
     def latlon_to_px(self, lat: float, lon: float) -> tuple[float, float]:
         if self.transform is None:
@@ -301,8 +334,9 @@ class Calibration:
         return self.plane.to_latlon(e, n)
 
     def uncertainty_m(self, gps_accuracy_m: float) -> float:
-        """Radius to draw around the dot: sqrt(gps^2 + calibration^2). When calibration
-        error is unmeasurable, assume the Approximate ceiling rather than zero."""
+        """Radius to draw around the dot: sqrt(gps^2 + calibration^2). With 2-3 points the
+        calibration term is the prior-based estimate (see prior_error); the 100 m
+        fallback only applies if no estimate exists at all."""
         calib = self.rmse_m if self.rmse_m is not None else APPROX_MAX_RMSE_M
         return math.hypot(gps_accuracy_m, calib)
 
@@ -312,10 +346,14 @@ class Calibration:
         return self.uncertainty_m(gps_accuracy_m) / self.transform.metres_per_pixel()
 
 
-def classify(n: int, rmse_m: float | None, coverage: float) -> Status:
+def classify(n: int, rmse_m: float | None, coverage: float, measured: bool = True) -> Status:
+    """Error estimated from assumed noise (2-3 points) is deliberately pessimistic, so it
+    only rules a calibration out when clearly hopeless (> 2x the Approximate ceiling);
+    the wide circle still tells the user how unsure the position is."""
     if n < 2:
         return Status.INSUFFICIENT
-    if rmse_m is not None and rmse_m > APPROX_MAX_RMSE_M:
+    ceiling = APPROX_MAX_RMSE_M if measured else 2 * APPROX_MAX_RMSE_M
+    if rmse_m is not None and rmse_m > ceiling:
         return Status.INSUFFICIENT
     if (n >= GOOD_MIN_POINTS and rmse_m is not None and rmse_m <= GOOD_MAX_RMSE_M
             and coverage >= GOOD_MIN_HULL_COVERAGE):
@@ -350,5 +388,10 @@ def calibrate(points: list[ControlPoint], image_size: tuple[int, int],
     resid = residual_error(px, en, image_size)
     r_est, r_up = resid if resid else (None, None)
     rmse = loo if method == "loo" else r_up
-    status = classify(n, rmse, coverage)
-    return Calibration(plane, transform, rmse, coverage, status, n, loo, r_est, r_up)
+    prior = None
+    if rmse is None and method != "loo":
+        # Too few points to measure error: estimate it from assumed noise and leverage.
+        prior = prior_error(px, transform, image_size)
+        rmse = prior
+    status = classify(n, rmse, coverage, measured=prior is None)
+    return Calibration(plane, transform, rmse, coverage, status, n, loo, r_est, r_up, prior)
